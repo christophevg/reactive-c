@@ -1,0 +1,22 @@
+Reactive C
+An experiment/tutorial on implementing reactive programming (RP) ideas in C.
+Christophe VG <contact@christophe.vg>
+
+---
+
+The origin of this repository is a paper "Deprecating the Observer
+Pattern with Scale.React". The goal of this repository is to implement the
+ideas from this paper in C, thus making it available to e.g. embedded
+development in C.
+
+Every commit in this repository addresses one of the topics raised in the above
+mentioned paper. This way it's an experiment, to see if we can actually
+formulate a valid way to write reactive-style code in C, and once completed it
+can serve as a tutorial on how to do it.
+
+Rationale
+
+The core of RP is an implementation of the observer pattern. This is also the
+starting point of the paper. As a first step we implement this design pattern,
+try to identify the same problem areas, as described in the paper, and
+formulate solutions to them in subsequent commits.
