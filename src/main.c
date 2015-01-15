@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "clock_observable.h"
+#include "network_observable.h"
+
 // some configuration
 
 // my parent is the node I'm sending my messages to, to have them propagated
@@ -16,128 +19,6 @@
 // considered non-cooperative.
 
 #define timeout 1000
-
-// the network has simplified addressing (int) and payloads (int)
-typedef int address_t;
-typedef int payload_t;
-
-typedef struct {
-  address_t from;
-  address_t to;
-  payload_t payload;
-} msg_t;
-
-// observers are in fact function pointers to callbacks that handle events. info
-// can be passed through a void*
-
-typedef void (*observer_t)(void *info);
-
-// observables are three functions and one data structure. one function allows
-// adding an observer to the data structure. the second function allows removal
-// of an observer. the third function is triggering an event to be dispatched to
-// the registered observer.
-
-// first observable: the network
-#define MAX_NW_OBSERVERS 3
-observer_t network_observers[MAX_NW_OBSERVERS];    // simple hard-coded list
-
-void nw_observer_init(void) {
-  // clear all pointers
-  for(int i=0;i<MAX_NW_OBSERVERS;i++) {
-    network_observers[i] = NULL;
-  }
-}
-
-void nw_add_observer(observer_t observer) {
-  // find a NULL and allocate it
-  for(int i=0;i<MAX_NW_OBSERVERS;i++) {
-    if(network_observers[i] == NULL) {
-      network_observers[i] = observer;
-      return;
-    }
-  }
-  printf("FAILED to add observer to network.\n");
-}
-
-void nw_remove_observer(observer_t observer) {
-  // find a NULL and allocate it
-  for(int i=0;i<MAX_NW_OBSERVERS;i++) {
-    if(network_observers[i] == observer) {
-      network_observers[i] = NULL;
-      return;
-    }
-  }
-  printf("FAILED to remove observer to network.");
-}
-
-void nw_handle_msg(msg_t msg) {
-  for(int i=0;i<MAX_NW_OBSERVERS;i++) {
-    if(network_observers[i] != NULL) {
-      network_observers[i]((void*)&msg);
-    }
-  }
-}
-
-// we provide a function to add network activity
-void nw_send(msg_t msg) {
-  printf("nw    : %d -> %d : %d\n", msg.from, msg.to, msg.payload);
-  // this gets injected into the handling of messages
-  nw_handle_msg(msg);
-}
-
-// second observable: clock
-// we use a virtual clock to perform the simulation
-
-int clock = 0;
-
-#define MAX_CLOCK_OBSERVERS 3
-observer_t clock_observers[MAX_CLOCK_OBSERVERS];
-
-void clock_observer_init(void) {
-  // clear all pointers
-  for(int i=0;i<MAX_CLOCK_OBSERVERS;i++) {
-    clock_observers[i] = NULL;
-  }
-}
-
-void clock_add_observer(observer_t observer) {
-  // find a NULL and allocate it
-  for(int i=0;i<MAX_CLOCK_OBSERVERS;i++) {
-    if(clock_observers[i] == NULL) {
-      clock_observers[i] = observer;
-      return;
-    }
-  }
-  printf("FAILED to add clock observer.\n");
-}
-
-void clock_remove_observer(observer_t observer) {
-  // find a NULL and allocate it
-  for(int i=0;i<MAX_CLOCK_OBSERVERS;i++) {
-    if(clock_observers[i] == observer) {
-      clock_observers[i] = NULL;
-      return;
-    }
-  }
-  printf("FAILED to remove clock observer.");
-}
-
-void clock_handle_tick(void) {
-  for(int i=0;i<MAX_CLOCK_OBSERVERS;i++) {
-    if(clock_observers[i] != NULL) {
-      clock_observers[i](NULL);
-    }
-  }
-}
-
-// we provide a function to simulate clock activity
-void clock_tick(int ms) {
-  clock += ms;
-  printf("clock : increasing time by %d to %d\n", ms, clock);
-  clock_handle_tick();
-}
-
-// CLIENT-IMPLEMENTATION STARTS HERE ....
 
 // we're using a data structure to hold all messages we're expecting a forward
 // for.
@@ -163,7 +44,7 @@ void observe_msg_to_parent(void* msg_ptr) {
     printf("client: message to parent observed (payload=%d)\n\n", msg.payload);
     for(int i=0;i<MAX_FORWARD_COUNT;i++) {
       if(forwards[i].end == 0) {
-        forwards[i] = (forward_t){ msg, clock + timeout };
+        forwards[i] = (forward_t){ msg, clock_now() + timeout };
         return;
       }
     }
@@ -179,7 +60,7 @@ void observe_msg_from_parent(void* msg_ptr) {
     for(int i=0; i<MAX_FORWARD_COUNT;i++) {
       if(msg.payload == forwards[i].msg.payload) {
         printf("        yes, we were looking for it.\n");
-        if(forwards[i].end < clock) {
+        if(forwards[i].end < clock_now()) {
           printf("        it took too long. should have been cleared.\n\n");
         } else {
           printf("        ok, clearing forward.\n\n");
@@ -195,35 +76,37 @@ void observe_msg_from_parent(void* msg_ptr) {
 void observe_clock_for_timeouts(void* null_ptr) {
   for(int i=0; i<MAX_FORWARD_COUNT;i++) {
     if(forwards[i].end > 0) {
-      if(forwards[i].end <= clock) {
+      if(forwards[i].end <= clock_now()) {
         printf("client: TIMEOUT for payload %d\n", forwards[i].msg.payload);
         forwards[i] = (forward_t){ (msg_t){ 0, 0, 0 }, 0 };
       } else {
         printf("client: continue waiting for forward of %d for %d ms\n\n",
-               forwards[i].msg.payload, forwards[i].end - clock);
+               forwards[i].msg.payload, forwards[i].end - clock_now());
       }
     }
   }
 }
 
 int main(void) {
-  nw_observer_init();
+  clock_init();
+  network_init();
+  
   forward_init();
 
   // setup observers
-  nw_add_observer(observe_msg_to_parent);
-  nw_add_observer(observe_msg_from_parent);
-  clock_add_observer(observe_clock_for_timeouts);
+  observable_add(network_observable, observe_msg_to_parent);
+  observable_add(network_observable, observe_msg_from_parent);
+  observable_add(clock_observable,   observe_clock_for_timeouts);
 
   // simulate events
-  nw_send((msg_t){1, 2, 100});
+  network_send((msg_t){1, 2, 100});
   // 1 sends 200 to 2, which is my parent. start observing!
   clock_tick(100);
   // 2 forwards the message, ok -> stop observing!
-  nw_send((msg_t){2, 3, 100});
+  network_send((msg_t){2, 3, 100});
   clock_tick(100);
   // 3 sends 200 to 2, which is my parent. start observing!
-  nw_send((msg_t){3, 2, 200}); 
+  network_send((msg_t){3, 2, 200});
   clock_tick(500);  // no timeout
   clock_tick(500);  // timeout
 

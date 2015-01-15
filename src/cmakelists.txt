@@ -1,0 +1,2 @@
+project (observer)
+add_executable(observer main.c observer.c clock_observable.c network_observable.c)

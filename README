@@ -105,3 +105,35 @@ Observers consist of one function. We can unify their type using a function poin
 
 It requires some type casting from the void* to the actual type, but that's the
 way it is. See tag "uniform-observer-type" for all changes.
+
+Observables are essentially a list of observers. So we can define a struct to
+hold them and accessor functions to manipulate them. We use a linked list of
+observer items, tracking the last entree for faster additions
+
+  typedef struct observer_item {
+    observer_t observer;
+    struct observer_item *next;
+  } *observer_item_t;
+
+  typedef struct observable {
+    observer_item_t observers;
+    observer_item_t last;
+  } *observable_t;
+
+  observable_t observable_new   (void);
+  void         observable_add   (observable_t, observer_t);
+  void         observable_remove(observable_t, observer_t);
+  void         observable_notify(observable_t, void*);
+
+Implementing concrete observables now only requires creating a new instance,
+adding it and using it in a generic way:
+
+  network_observable = observable_new();
+
+  observable_add(network_observable, observe_msg_to_parent);
+  observable_add(network_observable, observe_msg_from_parent);
+
+  observable_notify(network_observable, (void*)&msg);
+
+Through tag "uniform-observer-api" the handling of observers and observables is
+completely split of in a separate module with a uniform API.
