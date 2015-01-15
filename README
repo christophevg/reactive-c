@@ -92,3 +92,16 @@ implementation:
 * semantic distance
   "... the control flow is inverted ..."
 
+Implementation 1
+
+Let's start with some simple alterations that improve the uniformity. Currently
+every observable has its own set of methods to add or remove an observer. There
+is also an observer type for each observable. As a first step we want to create
+a uniform API for dealing with observables and observers.
+
+Observers consist of one function. We can unify their type using a function pointer:
+
+  typedef void (*observer_t)(void *info);
+
+It requires some type casting from the void* to the actual type, but that's the
+way it is. See tag "uniform-observer-type" for all changes.
