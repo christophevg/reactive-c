@@ -20,3 +20,75 @@ The core of RP is an implementation of the observer pattern. This is also the
 starting point of the paper. As a first step we implement this design pattern,
 try to identify the same problem areas, as described in the paper, and
 formulate solutions to them in subsequent commits.
+
+Scenario
+
+The paper starts from a typical example in UI programming: defining a path,
+based on the mouse movement while pressing a button.
+
+We transform this example to one that is applicable to embedded systems, to
+wireless sensors in specific. In the context of intrusion detection, one can
+implement a small monitor that checks if a parent node in a meshed network,
+actually forwards messages to his upstream parent. If this is not the case, the
+node might be compromised and the payload causes selective forwarding.
+
+The observing algorithm starts when it detects a network message being sent to
+its upstream parent. As of that moment, it will continue to follow all messages
+sent by that node and check if the previous message was actually forwarded.
+This stops once such a message is observed, but also when a timeout is reached.
+At this point, the algorithm will flag this suspicious behavior.
+
+This example maps to the original example: the message being sent to the parent
+node maps to the "down" event of the mouse button. Following all messages sent
+to the node maps to the "move" event of the mouse button. Finally, the timeout
+maps to the "up" event of the mouse button.
+
+Agreed, the example is a little more complex - due to the additional
+requirements on the "down" and "move" events, but that just makes the example
+more "real" :-)
+
+Implementation 0
+
+The base implementation uses three observers: one for messages sent to the
+parent node, a second one for the messages sent by the parent node and a third
+one to observe the passing of time to verify possible timeouts. The three
+observers use a central data structure, a list of expected messages to be
+forwarded, along with the time at which they timeout.
+
+The original paper identifies the following problems with this style of
+implementation:
+
+* side effects
+  "... observer-based event handling, where clients establish data flow in
+   different places through side-effects ..."
+
+* encapsulation
+  "Multiple observers are often needed to simulate a state machine ... state is
+   stored in variables ... often placed in a broader scope were it can be
+   misused by unrelated code ..."
+
+* composability
+  "... we cannot, e.g., easily add or remove [observing behavior] ..."
+
+* resource management
+  "we need to explicitly install and uninstall the (...) observer and we need
+   to remember the subject (point of installation). ... "
+
+* separation of concerns
+  "It is often preferable to separate the concerns of constructing [state] and
+   displaying it, e.g., as in the model-view-controller (MVC) [31] pattern."
+
+* data consistency
+  "We can achieve a separation of concerns with a [state] that itself publishes
+   events when it changes. Unfortunately, there is no guarantee for data
+   consistency ..."
+
+* uniformity
+ "Different methods to install different observers decrease code uniformity."
+
+* abstraction
+  "... we cannot abstract over event sources individually."
+
+* semantic distance
+  "... the control flow is inverted ..."
+
