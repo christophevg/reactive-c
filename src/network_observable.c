@@ -9,6 +9,5 @@ void network_init(void) {
 }
 
 void network_send(msg_t msg) {
-  printf("nw    : %d -> %d : %d\n", msg.from, msg.to, msg.payload);
   observable_notify(network_observable, (void*)&msg);
 }

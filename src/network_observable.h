@@ -19,6 +19,6 @@ typedef struct {
 observable_t network_observable;
 
 void network_init(void);
-void network_send(msg_t msg);
+void network_send(msg_t);
 
 #endif

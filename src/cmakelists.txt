@@ -1,2 +1,9 @@
 project (observer)
-add_executable(observer main.c observer.c clock_observable.c network_observable.c)
+add_executable(observer 
+  main.c
+  simulation.c
+  observer.c
+  clock_observable.c
+  network_observable.c
+  forward_observer.c
+)

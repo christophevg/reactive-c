@@ -137,3 +137,16 @@ adding it and using it in a generic way:
 
 Through tag "uniform-observer-api" the handling of observers and observables is
 completely split of in a separate module with a uniform API.
+
+Implementation 2
+
+Another worry by the original paper is encapsulation. We define a data
+structure to hold the information shared by the three observers. It looks that
+this is a problem, but in reality it is not. If we store the three observers
+and the data structure in a (C) module of their own, with only the three
+observers made part of the (public) interface, the data structure is private to
+these three functions. See tag "forward-observer-module" for this change. This
+commit also includes several clean-ups to separate more clearly the observable
+functionality and the simulation support. Also note that now the forward
+observer is merely a functionality that can be turned on and off. The three
+observers used to implement it are only available inside the module.
