@@ -1,5 +1,7 @@
 // clock observable
 
+#include <stdlib.h> // for NULL
+
 #include "clock_observable.h"
 
 // we use a virtual clock to perform the simulation
