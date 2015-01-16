@@ -150,3 +150,33 @@ commit also includes several clean-ups to separate more clearly the observable
 functionality and the simulation support. Also note that now the forward
 observer is merely a functionality that can be turned on and off. The three
 observers used to implement it are only available inside the module.
+
+Implementation 3
+
+In the previous implementation we also moved the configuration of the observer
+(the parent node and a timeout) to its own module, hiding it from the outside.
+By itself, this already makes the module a non-reusable component. Given the
+task of the forward observer, this might be okay, but other observer
+implementations might benefit from multiple instances with different
+configurations. So we will make the observer implementation configurable and
+reusable.
+
+The observer is (currently) still a simple function (pointer), called by the
+observables. We now want to augment this to a function with configuration data,
+or environment data. This sounds a lot like a closure ;-)
+
+Tag "observer-closure" introduces a form of closures and uses them to store
+configuration data about the observer. So the simple call to the function
+pointer ...
+
+  entree->observer(data);
+
+becomes a call to the function of the observer, providing its stored
+environment, along with the event data (after also changing some naming):
+
+  observing->function(observing->env, data);
+
+As this new structure is only used internally within the observer module,
+nothing is additionally exposed. Only the "add" and "remove" functions get an
+additional void* parameter to provide the environment. To manage the
+environment on the client-size, we introduce the forward_observer_t type.

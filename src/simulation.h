@@ -5,7 +5,7 @@
 
 #include "network_observable.h"
 
-void simulate_network_send(msg_t);
+void simulate_network_send(address_t, address_t, payload_t);
 void simulate_clock_tick(int);
 
 #endif

@@ -1,13 +1,18 @@
 // support for simulating the network and clock
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "observer.h"
 #include "simulation.h"
 #include "clock_observable.h"
 
-void simulate_network_send(msg_t msg) {
-  printf("nw    : %d -> %d : %d\n", msg.from, msg.to, msg.payload);
+void simulate_network_send(address_t from, address_t to, payload_t payload) {
+  printf("nw    : %d -> %d : %d\n", from, to, payload);
+  msg_t msg = malloc(sizeof(struct msg));
+  msg->from    = from;
+  msg->to      = to;
+  msg->payload = payload;
   network_send(msg);
 }
 

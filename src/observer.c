@@ -3,14 +3,15 @@
 
 // keeping internals of struct private
 
-typedef struct observer_item {
-  observer_t observer;
-  struct observer_item *next;
-} *observer_item_t;
+typedef struct observing {
+  observer_t       function;
+  void*            env;
+  struct observing *next;
+} *observing_t;
 
 typedef struct observable {
-  observer_item_t observers; // the root of the linked list of observers
-  observer_item_t last;      // the last of the linked list of observers
+  observing_t observers; // the root of the linked list of observers
+  observing_t last;      // the last of the linked list of observers
 } observable;
 
 // implementation of exposed API
@@ -22,49 +23,52 @@ observable_t observable_new(void) {
   return observable;
 }
 
-void observable_add(observable_t observable, observer_t observer) {
+void observable_add(observable_t observable, observer_t observer, void *env) {
   if(observable->observers == NULL) {
     // empty list
-    observable->observers = malloc(sizeof(struct observer_item));
+    observable->observers = malloc(sizeof(struct observing));
     observable->last = observable->observers;
   } else {
     // next
-    observable->last->next = malloc(sizeof(struct observer_item));
+    observable->last->next = malloc(sizeof(struct observing));
     observable->last = observable->last->next;
   }
-  observable->last->observer = observer;
+  observable->last->function = observer;
+  observable->last->env      = env;
   observable->last->next     = NULL;
 }
 
-void observable_remove(observable_t observable, observer_t observer) {
+void observable_remove(observable_t observable, observer_t observer, void *env) {
   // empty list
   if(observable->observers == NULL) { return; }
-  // first entree
-  if(observable->observers->observer == observer) {
+  // first observer
+  if(observable->observers->function == observer &&
+     observable->observers->env      == env )
+  {
     observable->observers = observable->observers->next;
     if(observable->observers == NULL) {  // first and only
       observable->last = NULL;
     }
     return;
   }
-  observer_item_t entree = observable->observers;
-  while(entree->next) {
-    if(entree->next->observer == observer) {
-      entree->next = entree->next->next;
-      if(entree->next == NULL) {
-        observable->last = entree;
+  observing_t observing = observable->observers;
+  while(observing->next) {
+    if(observing->next->function == observer && observing->next->env == env) {
+      observing->next = observing->next->next;
+      if(observing->next == NULL) {
+        observable->last = observing;
       }
       free(observer);
       return;
     }
-    entree = entree->next;
+    observing = observing->next;
   }
 }
 
 void observable_notify(observable_t observable, void *data) {
-  observer_item_t entree = observable->observers;
-  while(entree) {
-    entree->observer(data);
-    entree = entree->next;
+  observing_t observing = observable->observers;
+  while(observing) {
+    observing->function(observing->env, data);
+    observing = observing->next;
   }
 }

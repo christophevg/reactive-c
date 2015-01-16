@@ -9,5 +9,5 @@ void network_init(void) {
 }
 
 void network_send(msg_t msg) {
-  observable_notify(network_observable, (void*)&msg);
+  observable_notify(network_observable, (void*)msg);
 }
