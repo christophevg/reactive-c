@@ -7,12 +7,14 @@ CD        = cd
 CMAKE		  = cmake
 RM			  = rm -rf
 
+SRCS      = $(wildcard src/*.c) $(wildcard src/*.h)
+
 all: run
 
 run: ${BUILD_DIR}/${PROJECT}
 	@${BUILD_DIR}/${PROJECT}
 
-${BUILD_DIR}/${PROJECT}: ${BUILD_DIR}/Makefile
+${BUILD_DIR}/${PROJECT}: ${BUILD_DIR}/Makefile ${SRCS}
 	@(${CD} ${BUILD_DIR}; ${MAKE})
 
 ${BUILD_DIR}/Makefile: ${BUILD_DIR}
