@@ -180,3 +180,78 @@ As this new structure is only used internally within the observer module,
 nothing is additionally exposed. Only the "add" and "remove" functions get an
 additional void* parameter to provide the environment. To manage the
 environment on the client-size, we introduce the forward_observer_t type.
+
+Implementation 4
+
+Let's zoom in on the implementation of the forward observer. The creator
+function clearly shows that we in fact instantiate three observer functions in
+parallel. This is in fact functionally incorrect. The actual algorithm goes
+more like this: "Look for messages that are sent to my parent, then wait for a
+message sent by my parent with the same payload or wait for a timeout. Any of
+these events terminates the waiting."
+
+There are dependencies, with one observed event triggering the creation of two
+other observers that live in parallel, and whose observed events are merged and
+presented sequentially as feedback to the first.
+
+We might want to implement the forward observer in this way. This can conserve
+resources, because we don't need to track messages from the parent as long as
+we don't expect a forward; we don't need to track the clock for timeouts as
+long as we don't expect a forward. We want to be able to describe the forward
+observer in terms of other observes and compose observers together to create
+more complex observers.
+
+At the same time we want to invert the inversion of control. Currently, the
+three functions are callbacks, with some external controller pulling the
+strings. We want to be able to describe the algorithm from the viewpoint of the
+algorithm, not in function of some external controlling entity.
+
+Functionally we want something like:
+
+  when an observed "message to parent"
+    wait for an observed "message from parent"
+          or a timeout
+
+Which we can translate to the following more technical pseudocode:
+
+  // first create some observables (aka EventSources) 
+  observable message_to_parent = 
+    observe(network_message,
+      function(event) {
+        if(event.msg.to == parent) { emit event }
+      }
+    )
+
+  observable message_from_parent = 
+    observe(network_message,
+      function(event) {
+        if(event.msg.from == parent) { emit event }
+      }
+    )
+
+  observable forward_observer = observe(message_to_parent,
+    function(to_event) {
+      loop_until(
+        or(
+          observe(message_from_parent, function(from_event) { 
+            if(to_event.payload == from_event.payload) {
+              emit "ok" 
+            }
+          })
+          observe(timeout, function(event) { emit "fail"} )
+        )
+      )
+    }
+  )
+  
+  // top-level application tracks events from the forward observer
+  // performing the actual action (separation of concern)
+  observe(forward_observer, function(Event) { printf("failure"); })
+
+Dependencies:
+
+  main
+    forward_observer
+      message_to_parent => message_from_parent | timeout
+        network_message      network_message
+
