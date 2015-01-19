@@ -1,5 +1,5 @@
-project (observer)
-add_executable(observer 
+project (forward_observer)
+add_executable(forward_observer 
   main.c
   simulation.c
   observer.c
