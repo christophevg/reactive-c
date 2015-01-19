@@ -1,4 +1,4 @@
-PROJECT   = forward_observer
+PROJECT   = temperature
 SRC_DIR   = src
 BUILD_DIR = bin
 
