@@ -1,86 +1,204 @@
 // reactive c
 
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include "reactive.h"
 
-// linked list item (LI) for observers
-typedef struct observer_li {
-  observable_t observer;
-  struct observer_li *next;
-} *observer_li_t;
+// linked list item (LI) for observables. "next" can't be added to observable
+// because each observable can be grouped with other observers or observed
+// observables.
+struct observable_li {
+  observable_t    ob;
+  observable_li_t next;
+} observable_li;
 
+// an observable contains a pointer to a value (for ExternalValueObservers).
+// alternatively it contains a pointer to an adapter observer (function), which
+// takes the current values of its observed observables and computes it own new
+// value. these observed observables are stored in a linked list. because the
+// current values of these observables as pointers, we can point to them too
+// from an array. this array is a cached copy of the arguments passed to the
+// adapter function, which now only needs to be computed once (when adding
+// observed observables, through the observer() function). given the observed
+// observables, we can compute the level within the dependency graph, being the
+// max of the levels of the observed observable + 1. changes to this value need
+// to trigger an update with all observers of an observable. finally, the list
+// of observing observables tracking this observable are also stored in a linked
+// list.
 typedef struct observable {
-  void *value;                   // cached                             <----+
-  observer_t    generator;       // function that given in input produces __|
-  observable_t  observing;       // the observable we're observing
-  observer_li_t observers;       // root of linked list with observers
-  observer_li_t last_observer;   // helper for faster addition
+  void             *value;         // cached or pointer to observed value <---+
+  observer_t       adapter;        // function that given input produces _____|
+  observable_li_t  observeds;      // first of observed observables
+  observable_li_t  last_observed;  // helper for faster addition
+  void             **args;         // array of pointers to values of observeds
+  int              level;          // the level in the dependecy graph
+  observable_li_t  observers;      // first of observers
+  observable_li_t  last_observer;  // helper for faster addition
 } observable;
 
 // constructors
 
+// an ExternalValueObservable simply stores a pointer to some value in memory,
+// which is managed externally. when this value is updated, the observer_update
+// function should be called to activate the reactive behaviour associated with
+// it through this observable.
 observable_t observable_from_value(void* value) {
   observable_t observable   = malloc(sizeof(struct observable));
   observable->value         = value;
-  observable->generator     = NULL;
-  observable->observing     = NULL;
+  observable->adapter       = NULL;
+  observable->observeds     = NULL;
+  observable->last_observed = NULL;
+  observable->args          = NULL;
+  observable->level         = 0;
   observable->observers     = NULL;
   observable->last_observer = NULL;
   return observable;
 }
 
+// an ObservingObservable wraps and observer. every observer of observables is
+// inherently also an observable, due to the reactive nature of the underlying
+// data(stream). the function is an adapter that transforms the values of its
+// observed observables into its own current value. this value is externally
+// defined and its size should therefore be provided to allow memory allocation.
 observable_t observable_from_observer(observer_t observer, int size) {
   observable_t observable   = malloc(sizeof(struct observable));
   observable->value         = (void*)malloc(size);
-  observable->generator     = observer;
-  observable->observing     = NULL;
+  observable->adapter       = observer;
+  observable->observeds     = NULL;
+  observable->last_observed = NULL;
+  observable->args          = NULL;
+  observable->level         = 0;
   observable->observers     = NULL;
   observable->last_observer = NULL;
   return observable;
 }
 
-// extract current value from this observable
+// private functionality
 
-void *observable_value(observable_t observable) {
-  return observable->value;
+// recompute the level for this observable. do this by computing the maximum
+// level for all observed observables + 1
+void _update_level(observable_t this) {
+  observable_li_t observed = this->observeds;
+  int level = 0;
+  while(observed) {
+    if(observed->ob->level > level) { level = observed->ob->level; }
+    observed = observed->next;
+  }
+  this->level = level + 1;
 }
 
-// make a observer observe an observable, turning it in an observable itself
+// recompute the arguments pointer list for this observable. do this by storing
+// all value pointers of our own observed observables in an array.
+void _update_args(observable_t this) {
+  // compute number of observed observables
+  observable_li_t observed = this->observeds;
+  int count = 0;
+  while(observed) {
+    count++;
+    observed = observed->next;
+  }
+  // optionally free existing list
+  if(this->args != NULL) { free(this->args); }
+  
+  // allocate memory
+  this->args = malloc(sizeof(void*)*count);
+  
+  // copy pointers to values
+  observed = this->observeds;
+  count = 0;
+  while(observed) {
+    this->args[count] = observed->ob->value;
+    count++;
+    observed = observed->next;
+  }
+}
 
-observable_t observe(observable_t observable, observer_t observer, int size) {
-  // step 2: turn the observer into an observable
-  observable_t observable_observer = observable_from_observer(observer, size);
-  // add a back link
-  observable_observer->observing = observable;
-
-  // step 1: add the observer to the observable
-  if(observable->last_observer == NULL) {
+void _add_observer(observable_t this, observable_t observer) {
+  if(this->last_observer == NULL) {
     // first observer
-    observable->observers = malloc(sizeof(struct observer_li));
-    observable->last_observer = observable->observers;
+    this->observers     = malloc(sizeof(struct observable_li));
+    this->last_observer = this->observers;
   } else {
     // add one
-    observable->last_observer->next = malloc(sizeof(struct observer_li));
-    observable->last_observer = observable->last_observer->next;
+    this->last_observer->next = malloc(sizeof(struct observable_li));
+    this->last_observer = this->last_observer->next;
   }
   // fill info
-  observable->last_observer->observer = observable_observer;
-  observable->last_observer->next     = NULL;
+  this->last_observer->ob   = observer;
+  this->last_observer->next = NULL;
+}
+
+// public interface
+
+// turns a variadic list of observables into an linked list. this is a helper
+// function to allow calling observe(all(...) and pass a variable list of
+// observables)
+observable_li_t all(int count, ...) {
+  va_list         ap;
+  observable_li_t list; // first observable in the list
+  observable_li_t last; // track last observable in the list for addition
+  
+  // import other observables
+  va_start(ap, count);
+  for(int i=0; i<count; i++) {
+    if(i==0) {
+      list = malloc(sizeof(observable_li_t));
+      last = list;
+    } else {
+      last->next = malloc(sizeof(observable_li_t));
+      last = last->next;
+    }
+    last->ob   = va_arg(ap, observable_t);
+  }
+  va_end(ap);
+  
+  // return casted version
+  return list;
+}
+
+// start observing observed observables using an observer (function), storing
+// the resulting value in a memory location of size.
+observable_t observe(observable_li_t observeds, observer_t observer, int size) {
+  // step 1: turn the observer into an observable
+  observable_t observable_observer = observable_from_observer(observer, size);
+
+  // step 2: add observeds and update the arguments list and our level in the
+  // dependency graph
+  observable_observer->observeds = observeds;
+  _update_args(observable_observer);
+  _update_level(observable_observer);
+
+  // step 3: add the observer to all observeds
+  while(observeds) {
+    _add_observer(observeds->ob, observable_observer);
+    observeds = observeds->next;
+  }
 
   return observable_observer;
 }
 
-void observe_update(observable_t observable) {
-  // if we have a generator and something we're observing, get the value from
-  // the observed and feed it through the generator into our own value
-  if(observable->generator != NULL && observable->observing != NULL) {
-    observable->generator(observable_value(observable->observing), observable->value);
+void observe_update(observable_t this) {
+  // if we have a adapter and something we're observing, get the value from
+  // the observed and feed it through the adapter into our own value
+  if(this->adapter != NULL && this->observeds != NULL) {
+    this->adapter(this->args, this->value);
   }
-  // notify all our observers to do the same
-  observer_li_t observer = observable->observers;
+  
+  // notify all our observers to do the same, but only those that are directly
+  // dependant on us, so with level = our level + 1. those with even higher 
+  // levels are dependant on other levels below us and will be triggered as 
+  // soon as their parents all have been updated    
+  observable_li_t observer = this->observers;
   while(observer) {
-    observe_update(observer->observer);
+    if(observer->ob->level == this->level + 1) {
+      observe_update(observer->ob);
+    }
     observer = observer->next;
   }
+}
+
+// extract current value from this observable
+void *observable_value(observable_t observable) {
+  return observable->value;
 }

@@ -1,0 +1,22 @@
+About Glitches
+
+Glitches occur when changes haven't fully propagated to all observed entities.
+An example:
+
+  Observable --> Observer A -> Observer B
+            `---------------------^
+
+Observer B should not trigger its functionality simply when Observable has been
+updated. Only when Observer A has processed the change of the Observable,
+Observer B should trigger its functionality using the latest value of both
+Observable and Observer A.
+
+We solve this problem by introducing the concept of levels. In this example
+Observable is at level 0, Observer A is at level 1 and Observer B is at level
+2. The level can be determined based on the levels of all observed entities and
+is defined as the highest level of those plus 1.
+
+When pushing updates through this network, we notify each level in its turn.
+This way glitches are avoided.
+
+Levels are (re)computed when an observer is added or removed.
