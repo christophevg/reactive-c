@@ -21,8 +21,6 @@ observable_li_t all(int,...);
 
 // adds observers to a list of observables, providing memory space for its
 // value, based on its size
-// NOTE: we pass a pointer to an observable, but in reality it should be a
-// linked list of observable. this list is produced by all().
 observable_t observe(observable_li_t, observer_t, int);
 
 // trigger and observable to be updated
