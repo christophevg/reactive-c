@@ -1,6 +1,7 @@
-project (temperature)
+project (reactive)
 add_executable(temperature
-  main.c
+  temperature.c
   reactive.c
   temp_behavior.c
 )
+
