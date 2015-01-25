@@ -129,6 +129,26 @@ void _add_observer(observable_t this, observable_t observer) {
   this->last_observer->next = NULL;
 }
 
+void _remove_observer(observable_t this, observable_t observer) {
+  if(this->observers->ob == observer) {
+    // remove first observer
+    observable_li_t temp = this->observers;
+    this->observers = this->observers->next;
+    free(temp);
+    return;
+  }
+  // find in linked list
+  observable_li_t iter = this->observers;
+  while(iter->next && iter->next->ob != observer) {
+    iter = iter->next;
+  }
+  if(iter->next) {
+    observable_li_t temp = iter->next;
+    iter->next = iter->next->next;
+    free(temp);
+  }
+}
+
 // public interface
 
 // turns a variadic list of observables into an linked list. this is a helper
@@ -176,6 +196,34 @@ observable_t observe(observable_li_t observeds, observer_t observer, int size) {
   }
 
   return observable_observer;
+}
+
+bool dispose(observable_t observer) {
+  // check that we can be disposed of = no one is observing us
+  if(observer->observers != NULL) {
+    return false;
+  }
+
+  // step 1: remove observer from all observeds
+  int count = 0;
+  while(observer->observeds) {
+    count++;
+    _remove_observer(observer->observeds->ob, observer);
+    observable_li_t temp = observer->observeds;
+    observer->observeds = observer->observeds->next;
+    free(temp);
+  }
+
+  // step 2: free cached array of pointers to values of observers
+  free(observer->args);
+
+  // step 3: (optionally) free local value
+  if(observer->value) { free(observer->value); }
+
+  // step 4: release the observer itself
+  free(observer);
+
+  return true;
 }
 
 void observe_update(observable_t this) {

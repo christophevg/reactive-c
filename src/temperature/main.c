@@ -50,11 +50,24 @@ int main(void) {
   // let's add an observer that displays the updates
 
   // display updates from now on using our display observer function
-  observe(all(2, temp_behavior, temp_f), display, 0);
+  observable_t displayer = observe(all(2, temp_behavior, temp_f), display, 0);
 
   temp_update(19);
   temp_update(20);
   temp_update(21);
   
+  dispose(displayer);
+
+  temp_update(22);
+  temp_update(23);
+  temp_update(24);
+
+  // some debugging feedback
+  printf( "current temp=%f | temp_f=%f\n",
+          *(double*)observable_value(temp_behavior),
+          *(double*)observable_value(temp_f));
+
+  dispose(temp_f);
+
   exit(EXIT_SUCCESS);
 }

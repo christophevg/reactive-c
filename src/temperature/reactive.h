@@ -1,6 +1,8 @@
 #ifndef __REACTIVE_H
 #define __REACTIVE_H
 
+#include <stdbool.h>
+
 // we're only exposing the observable type, the inner workings are private
 typedef struct observable *observable_t;
 
@@ -22,6 +24,9 @@ observable_li_t all(int,...);
 // adds observers to a list of observables, providing memory space for its
 // value, based on its size
 observable_t observe(observable_li_t, observer_t, int);
+
+// removed an observer from all observeds and releases it entirely
+bool dispose(observable_t);
 
 // trigger and observable to be updated
 void observe_update(observable_t observable);
