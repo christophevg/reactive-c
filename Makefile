@@ -1,4 +1,5 @@
 PROJECT   = temperature
+APPS      = temperature merging
 SRC_DIR   = src
 BUILD_DIR = bin
 
@@ -10,12 +11,14 @@ RM			  = rm -rf
 SRCS      = $(wildcard ${SRC_DIR}/${PROJECT}/*.c) \
 	 					$(wildcard ${SRC_DIR}/${PROJECT}/*.h)
 
+BINS			= $(addprefix ${BUILD_DIR}/, ${APPS})
+
 all: clean run
 
-run: ${BUILD_DIR}/${PROJECT}
-	@${BUILD_DIR}/${PROJECT}
+run: ${BINS}
+	@for bin in $^; do echo "*** executing $${bin}"; ./$${bin}; done
 
-${BUILD_DIR}/${PROJECT}: ${BUILD_DIR}/Makefile ${SRCS}
+${BINS}: ${BUILD_DIR}/Makefile ${SRCS}
 	@(${CD} ${BUILD_DIR}; ${MAKE})
 
 ${BUILD_DIR}/Makefile: ${BUILD_DIR}

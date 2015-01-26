@@ -35,6 +35,7 @@ typedef struct observable {
   int              level;          // the level in the dependecy graph
   observable_li_t  observers;      // first of observers
   observable_li_t  last_observer;  // helper for faster addition
+  observable_t     parent;         // helper field for storing creating parent
 } observable;
 
 // constructors
@@ -53,6 +54,7 @@ observable_t observable_from_value(void* value) {
   observable->level         = 0;
   observable->observers     = NULL;
   observable->last_observer = NULL;
+  observable->parent        = NULL;
   return observable;
 }
 
@@ -71,6 +73,7 @@ observable_t observable_from_observer(observer_t observer, int size) {
   observable->level         = 0;
   observable->observers     = NULL;
   observable->last_observer = NULL;
+  observable->parent        = NULL;
   return observable;
 }
 
@@ -198,6 +201,7 @@ observable_t observe(observable_li_t observeds, observer_t observer, int size) {
   return observable_observer;
 }
 
+// cleanly frees the entire observable/observer
 bool dispose(observable_t observer) {
   // check that we can be disposed of = no one is observing us
   if(observer->observers != NULL) {
@@ -226,11 +230,45 @@ bool dispose(observable_t observer) {
   return true;
 }
 
+// merging support
+
+// internal observer function to merge value updates to multiple observables
+// into one "merged" observable observer.
+void _merge(void **args, void* merged) {
+  ((observable_t)merged)->value = args[0];
+
+  // cached args are out of date, because we're modifying the pointer itself
+  // force refresh cache on all observers of merged_ob
+  observable_li_t iter = ((observable_t)merged)->observers;
+  while(iter) {
+    _update_args(iter->ob);
+    iter = iter->next;
+  }
+
+  observe_update((observable_t)merged);
+}
+
+// create a single observable observer from a list of observed observables.
+observable_t merge(observable_li_t observed) {
+  observable_t merged = observable_from_value(NULL);
+  while(observed) {
+    observable_t tmp = observe(all(1, observed->ob), _merge, 0);
+    tmp->parent = merged;
+    observed = observed->next;
+  }
+  return merged;
+}
+
+// trigger for (external) update of observable
 void observe_update(observable_t this) {
-  // if we have a adapter and something we're observing, get the value from
-  // the observed and feed it through the adapter into our own value
-  if(this->adapter != NULL && this->observeds != NULL) {
-    this->adapter(this->args, this->value);
+  // if we have a adapter execute it
+  if(this->adapter != NULL) {
+    // if the adapter is the internal _merge, we pass the parent, not the value
+    if(this->adapter == _merge) {
+      this->adapter(this->args, this->parent);
+    } else {
+      this->adapter(this->args, this->value);
+    }
   }
   
   // notify all our observers to do the same, but only those that are directly

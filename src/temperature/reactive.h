@@ -31,4 +31,8 @@ bool dispose(observable_t);
 // trigger and observable to be updated
 void observe_update(observable_t observable);
 
+// merge multiple observables, resulting in a single observable with interleaved
+// updates
+observable_t merge(observable_li_t);
+
 #endif

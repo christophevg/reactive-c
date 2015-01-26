@@ -1,7 +1,12 @@
 project (reactive)
+
 add_executable(temperature
   temperature.c
   reactive.c
   temp_behavior.c
 )
 
+add_executable(merging
+  merging.c
+  reactive.c
+)
