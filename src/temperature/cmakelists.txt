@@ -10,3 +10,8 @@ add_executable(merging
   merging.c
   reactive.c
 )
+
+add_executable(map
+  map.c
+  reactive.c
+)

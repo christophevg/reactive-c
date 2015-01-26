@@ -35,4 +35,7 @@ void observe_update(observable_t observable);
 // updates
 observable_t merge(observable_li_t);
 
+// maps an observable to something else ...
+observable_t map(observable_t, observer_t, int);
+
 #endif

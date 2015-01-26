@@ -259,6 +259,10 @@ observable_t merge(observable_li_t observed) {
   return merged;
 }
 
+observable_t map(observable_t observed, observer_t adapter, int size) {
+  return observe(all(1, observed), adapter, size);
+}
+
 // trigger for (external) update of observable
 void observe_update(observable_t this) {
   // if we have a adapter execute it
