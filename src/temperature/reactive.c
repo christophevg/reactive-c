@@ -13,6 +13,14 @@ struct observable_li {
   observable_li_t next;
 } observable_li;
 
+// observables can have several properties, which influences the internal
+// workings.
+enum properties {
+  VALUE       = 1,
+  OBSERVER    = 3,
+  OUT_IS_SELF = 4 // don't provide value but the entire observable as out param
+};
+
 // an observable contains a pointer to a value (for ExternalValueObservers).
 // alternatively it contains a pointer to an adapter observer (function), which
 // takes the current values of its observed observables and computes it own new
@@ -27,6 +35,7 @@ struct observable_li {
 // of observing observables tracking this observable are also stored in a linked
 // list.
 typedef struct observable {
+  int              prop;           // internal properties
   void             *value;         // cached or pointer to observed value <---+
   observer_t       adapter;        // function that given input produces _____|
   observable_li_t  observeds;      // first of observed observables
@@ -46,6 +55,7 @@ typedef struct observable {
 // it through this observable.
 observable_t observable_from_value(void* value) {
   observable_t observable   = malloc(sizeof(struct observable));
+  observable->prop          = VALUE;
   observable->value         = value;
   observable->adapter       = NULL;
   observable->observeds     = NULL;
@@ -65,6 +75,7 @@ observable_t observable_from_value(void* value) {
 // defined and its size should therefore be provided to allow memory allocation.
 observable_t observable_from_observer(observer_t observer, int size) {
   observable_t observable   = malloc(sizeof(struct observable));
+  observable->prop          = OBSERVER;
   observable->value         = (void*)malloc(size);
   observable->adapter       = observer;
   observable->observeds     = NULL;
@@ -234,18 +245,19 @@ bool dispose(observable_t observer) {
 
 // internal observer function to merge value updates to multiple observables
 // into one "merged" observable observer.
-void _merge(void **args, void* merged) {
-  ((observable_t)merged)->value = args[0];
+void _merge(void **args, void* self) {
+  observable_t merged = ((observable_t)self)->parent;
+  merged->value = args[0];
 
   // cached args are out of date, because we're modifying the pointer itself
   // force refresh cache on all observers of merged_ob
-  observable_li_t iter = ((observable_t)merged)->observers;
+  observable_li_t iter = merged->observers;
   while(iter) {
     _update_args(iter->ob);
     iter = iter->next;
   }
 
-  observe_update((observable_t)merged);
+  observe_update(merged);
 }
 
 // create a single observable observer from a list of observed observables.
@@ -253,6 +265,7 @@ observable_t merge(observable_li_t observed) {
   observable_t merged = observable_from_value(NULL);
   while(observed) {
     observable_t tmp = observe(all(1, observed->ob), _merge, 0);
+    tmp->prop |= OUT_IS_SELF;
     tmp->parent = merged;
     observed = observed->next;
   }
@@ -284,8 +297,8 @@ void observe_update(observable_t this) {
   // if we have a adapter execute it
   if(this->adapter != NULL) {
     // if the adapter is the internal _merge, we pass the parent, not the value
-    if(this->adapter == _merge) {
-      this->adapter(this->args, this->parent);
+    if(this->prop & OUT_IS_SELF) {
+      this->adapter(this->args, this);
     } else {
       this->adapter(this->args, this->value);
     }
