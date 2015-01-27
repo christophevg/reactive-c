@@ -241,6 +241,36 @@ bool dispose(observable_t observer) {
   return true;
 }
 
+// trigger for (external) update of observable
+void observe_update(observable_t this) {
+  // if we have a adapter execute it
+  if(this->adapter != NULL) {
+    // if the adapter is the internal _merge, we pass the parent, not the value
+    if(this->prop & OUT_IS_SELF) {
+      this->adapter(this->args, this);
+    } else {
+      this->adapter(this->args, this->value);
+    }
+  }
+
+  // notify all our observers to do the same, but only those that are directly
+  // dependant on us, so with level = our level + 1. those with even higher
+  // levels are dependant on other levels below us and will be triggered as
+  // soon as their parents all have been updated
+  observable_li_t observer = this->observers;
+  while(observer) {
+    if(observer->ob->level == this->level + 1) {
+      observe_update(observer->ob);
+    }
+    observer = observer->next;
+  }
+}
+
+// extract current value from this observable
+void *observable_value(observable_t observable) {
+  return observable->value;
+}
+
 // merging support
 
 // internal observer function to merge value updates to multiple observables
@@ -272,6 +302,8 @@ observable_t merge(observable_li_t observed) {
   return merged;
 }
 
+// some API example functions
+
 observable_t map(observable_t observed, observer_t adapter, int size) {
   return observe(all(1, observed), adapter, size);
 }
@@ -290,34 +322,4 @@ observable_t addi(observable_t a, observable_t b) {
 
 observable_t addd(observable_t a, observable_t b) {
   return observe(all(2, a, b), _addd, sizeof(double));
-}
-
-// trigger for (external) update of observable
-void observe_update(observable_t this) {
-  // if we have a adapter execute it
-  if(this->adapter != NULL) {
-    // if the adapter is the internal _merge, we pass the parent, not the value
-    if(this->prop & OUT_IS_SELF) {
-      this->adapter(this->args, this);
-    } else {
-      this->adapter(this->args, this->value);
-    }
-  }
-  
-  // notify all our observers to do the same, but only those that are directly
-  // dependant on us, so with level = our level + 1. those with even higher 
-  // levels are dependant on other levels below us and will be triggered as 
-  // soon as their parents all have been updated    
-  observable_li_t observer = this->observers;
-  while(observer) {
-    if(observer->ob->level == this->level + 1) {
-      observe_update(observer->ob);
-    }
-    observer = observer->next;
-  }
-}
-
-// extract current value from this observable
-void *observable_value(observable_t observable) {
-  return observable->value;
 }
