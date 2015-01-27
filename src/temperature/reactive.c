@@ -263,6 +263,22 @@ observable_t map(observable_t observed, observer_t adapter, int size) {
   return observe(all(1, observed), adapter, size);
 }
 
+void _addi(void **args, void *out) {
+  (*(int*)out) = (*(int*)(args[0])) + (*(int*)(args[1]));
+}
+
+void _addd(void **args, void *out) {
+  (*(double*)out) = (*(double*)(args[0])) + (*(double*)(args[1]));
+}
+
+observable_t addi(observable_t a, observable_t b) {
+  return observe(all(2, a, b), _addi, sizeof(int));
+}
+
+observable_t addd(observable_t a, observable_t b) {
+  return observe(all(2, a, b), _addd, sizeof(double));
+}
+
 // trigger for (external) update of observable
 void observe_update(observable_t this) {
   // if we have a adapter execute it

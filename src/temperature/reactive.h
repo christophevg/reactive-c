@@ -38,4 +38,7 @@ observable_t merge(observable_li_t);
 // maps an observable to something else ...
 observable_t map(observable_t, observer_t, int);
 
+observable_t addi(observable_t, observable_t);
+observable_t addd(observable_t, observable_t);
+
 #endif

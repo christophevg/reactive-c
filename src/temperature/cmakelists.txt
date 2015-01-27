@@ -15,3 +15,8 @@ add_executable(map
   map.c
   reactive.c
 )
+
+add_executable(add
+  add.c
+  reactive.c
+)
