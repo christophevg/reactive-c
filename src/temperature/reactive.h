@@ -41,4 +41,10 @@ observable_t map(observable_t, observer_t, int);
 observable_t addi(observable_t, observable_t);
 observable_t addd(observable_t, observable_t);
 
+// demo for lifting through macro-expansion
+#define lift2(type, fun) \
+  void lifted_##fun(void **in, void *out) { \
+    *(type*)(out) = fun((*(type*)(in[0])), (*(type*)(in[1]))); \
+  }
+
 #endif

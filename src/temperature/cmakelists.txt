@@ -20,3 +20,8 @@ add_executable(add
   add.c
   reactive.c
 )
+
+add_executable(lift
+  lift.c
+  reactive.c
+)

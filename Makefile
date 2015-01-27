@@ -1,5 +1,5 @@
 PROJECT   = temperature
-APPS      = temperature merging map add
+APPS      = temperature merging map add lift
 SRC_DIR   = src
 BUILD_DIR = bin
 
