@@ -17,6 +17,7 @@ struct observable_li {
 // observables can have several properties, which influences the internal
 // workings.
 enum properties {
+  UNKNOWN     = 0,
   VALUE       = 1,
   OBSERVER    = 3,
   OUT_IS_SELF = 4, // don't provide value but the entire observable as out param
@@ -55,14 +56,10 @@ typedef struct observable {
 
 // constructors
 
-// an ExternalValueObservable simply stores a pointer to some value in memory,
-// which is managed externally. when this value is updated, the observer_update
-// function should be called to activate the reactive behaviour associated with
-// it through this observable.
-observable_t observable_from_value(void* value) {
+observable_t _new() {
   observable_t observable   = malloc(sizeof(struct observable));
-  observable->prop          = VALUE;
-  observable->value         = value;
+  observable->prop          = UNKNOWN;
+  observable->value         = NULL;
   observable->adapter       = NULL;
   observable->observeds     = NULL;
   observable->last_observed = NULL;
@@ -75,24 +72,27 @@ observable_t observable_from_value(void* value) {
   return observable;
 }
 
+// an ExternalValueObservable simply stores a pointer to some value in memory,
+// which is managed externally. when this value is updated, the observer_update
+// function should be called to activate the reactive behaviour associated with
+// it through this observable.
+observable_t observable_from_value(void* value) {
+  observable_t observable   = _new();
+  observable->prop          = VALUE;
+  observable->value         = value;
+  return observable;
+}
+
 // an ObservingObservable wraps and observer. every observer of observables is
 // inherently also an observable, due to the reactive nature of the underlying
 // data(stream). the function is an adapter that transforms the values of its
 // observed observables into its own current value. this value is externally
 // defined and its size should therefore be provided to allow memory allocation.
 observable_t observable_from_observer(observer_t observer, int size) {
-  observable_t observable   = malloc(sizeof(struct observable));
+  observable_t observable   = _new();
   observable->prop          = OBSERVER;
   observable->value         = (void*)malloc(size);
   observable->adapter       = observer;
-  observable->observeds     = NULL;
-  observable->last_observed = NULL;
-  observable->args          = NULL;
-  observable->level         = 0;
-  observable->observers     = NULL;
-  observable->last_observer = NULL;
-  observable->parent        = NULL;
-  observable->next_fragment = NULL;
   return observable;
 }
 
