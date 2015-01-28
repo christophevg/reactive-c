@@ -1,5 +1,5 @@
 PROJECT   = temperature
-APPS      = temperature merging map add lift
+APPS      = temperature merging map add lift await
 SRC_DIR   = src
 BUILD_DIR = bin
 

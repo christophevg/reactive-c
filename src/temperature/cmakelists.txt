@@ -25,3 +25,8 @@ add_executable(lift
   lift.c
   reactive.c
 )
+
+add_executable(await
+  await.c
+  reactive.c
+)

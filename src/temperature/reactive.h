@@ -26,7 +26,7 @@ observable_li_t all(int,...);
 observable_t observe(observable_li_t, observer_t, int);
 
 // removed an observer from all observeds and releases it entirely
-bool dispose(observable_t);
+void dispose(observable_t);
 
 // trigger and observable to be updated
 void observe_update(observable_t observable);
@@ -46,5 +46,13 @@ observable_t addd(observable_t, observable_t);
   void lifted_##fun(void **in, void *out) { \
     *(type*)(out) = fun((*(type*)(in[0])), (*(type*)(in[1]))); \
   }
+
+// support for scripting
+
+typedef struct fragment *fragment_t;
+
+fragment_t await(observable_t);
+
+observable_t observable_from_script(fragment_t, fragment_t);
 
 #endif

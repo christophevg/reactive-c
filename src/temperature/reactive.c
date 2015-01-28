@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdio.h>
 
 #include "reactive.h"
 
@@ -18,22 +19,26 @@ struct observable_li {
 enum properties {
   VALUE       = 1,
   OBSERVER    = 3,
-  OUT_IS_SELF = 4 // don't provide value but the entire observable as out param
+  OUT_IS_SELF = 4, // don't provide value but the entire observable as out param
+  DISPOSED    = 8  // used to mark an observable as ready to be removed
 };
 
-// an observable contains a pointer to a value (for ExternalValueObservers).
-// alternatively it contains a pointer to an adapter observer (function), which
-// takes the current values of its observed observables and computes it own new
-// value. these observed observables are stored in a linked list. because the
-// current values of these observables as pointers, we can point to them too
-// from an array. this array is a cached copy of the arguments passed to the
-// adapter function, which now only needs to be computed once (when adding
-// observed observables, through the observer() function). given the observed
-// observables, we can compute the level within the dependency graph, being the
-// max of the levels of the observed observable + 1. changes to this value need
-// to trigger an update with all observers of an observable. finally, the list
-// of observing observables tracking this observable are also stored in a linked
-// list.
+// an observable has properties that are used internally to manage its
+// functionality and/or lifetime. an observable contains a pointer to a value
+// (for ExternalValueObservers). alternatively it contains a pointer to an
+// adapter observer (function), which takes the current values of its observed
+// observables and computes it own new value. these observed observables are
+// stored in a linked list. because the current values of these observables as
+// pointers, we can point to them too from an array. this array is a cached copy
+// of the arguments passed to the adapter function, which now only needs to be
+// computed once (when adding observed observables, through the observer()
+// function). given the observed observables, we can compute the level within
+// the dependency graph, being the max of the levels of the observed observable
+// + 1. changes to this value need to trigger an update with all observers of an
+// observable. a list of observing observables tracking this observable are also
+// stored in a linked list. because observables can be created by means of a
+// script, a link to the next fragement in the script is also stored in an
+// observable.
 typedef struct observable {
   int              prop;           // internal properties
   void             *value;         // cached or pointer to observed value <---+
@@ -45,6 +50,7 @@ typedef struct observable {
   observable_li_t  observers;      // first of observers
   observable_li_t  last_observer;  // helper for faster addition
   observable_t     parent;         // helper field for storing creating parent
+  fragment_t       next_fragment;  // next fragment to be activated
 } observable;
 
 // constructors
@@ -65,6 +71,7 @@ observable_t observable_from_value(void* value) {
   observable->observers     = NULL;
   observable->last_observer = NULL;
   observable->parent        = NULL;
+  observable->next_fragment = NULL;
   return observable;
 }
 
@@ -85,6 +92,7 @@ observable_t observable_from_observer(observer_t observer, int size) {
   observable->observers     = NULL;
   observable->last_observer = NULL;
   observable->parent        = NULL;
+  observable->next_fragment = NULL;
   return observable;
 }
 
@@ -143,7 +151,8 @@ void _add_observer(observable_t this, observable_t observer) {
   this->last_observer->next = NULL;
 }
 
-void _remove_observer(observable_t this, observable_t observer) {
+void _unlink_observer(observable_t this, observable_t observer) {
+  if(this->observers == NULL) { return; } // no observers
   if(this->observers->ob == observer) {
     // remove first observer
     observable_li_t temp = this->observers;
@@ -159,6 +168,74 @@ void _remove_observer(observable_t this, observable_t observer) {
   if(iter->next) {
     observable_li_t temp = iter->next;
     iter->next = iter->next->next;
+    free(temp);
+  }
+  // update cached arg pointers and the level in the dependency graph
+  _update_args(observer);
+  _update_level(observer);
+}
+
+void _add_observed(observable_t this, observable_t observed) {
+  if(this->last_observed == NULL) {
+    // first observed
+    this->observeds     = malloc(sizeof(struct observable_li));
+    this->last_observed = this->observeds;
+  } else {
+    // add one
+    this->last_observed->next = malloc(sizeof(struct observable_li));
+    this->last_observed = this->last_observed->next;
+  }
+  // fill info
+  this->last_observed->ob   = observed;
+  this->last_observed->next = NULL;
+
+  // update cached arg pointers and the level in the dependency graph
+  _update_args(this);
+  _update_level(this);
+}
+
+void _unlink_observed(observable_t this, observable_t observed) {
+  if(this->observeds == NULL) { return; } // no observeds
+  if(this->observeds->ob == observed) {
+    // remove first observed
+    observable_li_t temp = this->observers;
+    this->observeds = this->observeds->next;
+    free(temp);
+    return;
+  }
+  // find in linked list
+  observable_li_t iter = this->observeds;
+  while(iter->next && iter->next->ob != observed) {
+    iter = iter->next;
+  }
+  if(iter->next) {
+    observable_li_t temp = iter->next;
+    iter->next = iter->next->next;
+    free(temp);
+  }
+  // update cached arg pointers and the level in the dependency graph
+  _update_args(this);
+  _update_level(this);
+}
+
+// remove all links to observers
+void _unlink_all_observers(observable_t this) {
+  while(this->observers) {
+    // back-link from observer
+    _unlink_observed(this->observers->ob, this);
+    observable_li_t temp = this->observers;
+    this->observers = this->observers->next;
+    free(temp);
+  }
+}
+
+// remove all links to observed observables
+void _unlink_all_observeds(observable_t this) {
+  while(this->observeds) {
+    // back-link from observed
+    _unlink_observer(this->observeds->ob, this);
+    observable_li_t temp = this->observeds;
+    this->observeds = this->observeds->next;
     free(temp);
   }
 }
@@ -212,37 +289,51 @@ observable_t observe(observable_li_t observeds, observer_t observer, int size) {
   return observable_observer;
 }
 
-// cleanly frees the entire observable/observer
-bool dispose(observable_t observer) {
-  // check that we can be disposed of = no one is observing us
-  if(observer->observers != NULL) {
-    return false;
-  }
+// marks an observable for disposing, which is honored when an update-push is
+// executed on it.
+void dispose(observable_t this) {
+  this->prop |= DISPOSED;
+}
 
-  // step 1: remove observer from all observeds
-  int count = 0;
-  while(observer->observeds) {
-    count++;
-    _remove_observer(observer->observeds->ob, observer);
-    observable_li_t temp = observer->observeds;
-    observer->observeds = observer->observeds->next;
+// actually free the entire observable structure
+void _free(observable_t this) {
+  _unlink_all_observers(this);
+  _unlink_all_observeds(this);
+  if(this->args)  { free(this->args);  }
+  if(this->value) { free(this->value); }
+  free(this);
+}
+
+// check all observers and remove those that are marked for disposal
+void _gc(observable_t this) {
+  if(this->observers == NULL) { return; }
+
+  // garbage collect disposed observers
+  if(this->observers->ob->prop & DISPOSED) {    // first observer got disposed
+    observable_li_t temp = this->observers;
+    this->observers = this->observers->next;
+    _free(temp->ob);
     free(temp);
+    return;
   }
-
-  // step 2: free cached array of pointers to values of observers
-  free(observer->args);
-
-  // step 3: (optionally) free local value
-  if(observer->value) { free(observer->value); }
-
-  // step 4: release the observer itself
-  free(observer);
-
-  return true;
+  observable_li_t observer = this->observers;
+  while(observer->next) {
+    while(observer->next && (observer->next->ob->prop & DISPOSED)) {
+      observable_li_t temp = observer->next;
+      observer->next = observer->next->next;
+      _free(temp->ob);
+      free(temp);
+    }
+    observer = observer->next;
+  }
 }
 
 // trigger for (external) update of observable
 void observe_update(observable_t this) {
+  // if we're marked for disposal (externally), we don't perform any processing
+  // one of our observed parents will garbage collect us sometime
+  if(this->prop & DISPOSED) { return; }
+
   // if we have a adapter execute it
   if(this->adapter != NULL) {
     // if the adapter is the internal _merge, we pass the parent, not the value
@@ -252,6 +343,9 @@ void observe_update(observable_t this) {
       this->adapter(this->args, this->value);
     }
   }
+
+  // the logic in the adapter might have marked us for disposal, still we allow
+  // the event flow to continue down to our observers one more time.
 
   // notify all our observers to do the same, but only those that are directly
   // dependant on us, so with level = our level + 1. those with even higher
@@ -264,6 +358,9 @@ void observe_update(observable_t this) {
     }
     observer = observer->next;
   }
+
+  // perform garbage collection on our observers
+  _gc(this);
 }
 
 // extract current value from this observable
@@ -322,4 +419,72 @@ observable_t addi(observable_t a, observable_t b) {
 
 observable_t addd(observable_t a, observable_t b) {
   return observe(all(2, a, b), _addd, sizeof(double));
+}
+
+// scripting support
+
+enum code {
+  AWAIT
+};
+
+struct fragment {
+  observable_t o;
+  enum code    statement;
+};
+
+// await fragment constructor
+fragment_t await(observable_t o) {
+  fragment_t f = malloc(sizeof(struct fragment));
+  f->statement = AWAIT;
+  f->o = o;
+  return f;
+}
+
+// forward declaration
+observable_t _activate(fragment_t);
+
+void _next(observable_t script) {
+  if(script->next_fragment == NULL) { return; } // end of script
+
+  // activate
+  observable_t step = _activate(script->next_fragment);
+  step->parent = script;
+
+  // observe the new step
+  _add_observed(script, step);
+
+  // no next step (TODO: advance linked list)
+  script->next_fragment = NULL;
+}
+
+void _finalize_await(void **args, void *this) {
+  fprintf( stderr, "finalizing await\n" ); // for demo purposes ;-)
+  // dispose ourselves
+  dispose((observable_t)this);
+
+  // tell the script to move to the next step
+  _next(((observable_t)this)->parent);
+}
+
+observable_t _activate(fragment_t f) {
+  observable_t ob = NULL;
+  switch(f->statement) {
+    case AWAIT:
+      ob = observe(all(1, f->o), _finalize_await, 0);
+      ob->prop |= OUT_IS_SELF;
+      free(f); // once activated this is no longer needed
+  }
+  return ob;
+}
+
+void dummy(void **in, void *out) {}
+
+observable_t observable_from_script(fragment_t f1, fragment_t f2) {
+  // activate first step
+  observable_t step1 = _activate(f1);
+  observable_t script = observe(all(1, step1), dummy, 0);
+  step1->parent = script;
+  script->next_fragment = f2;
+  // TODO: VARARGS -> linked list of fragments
+  return script;
 }
