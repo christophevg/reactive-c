@@ -54,6 +54,18 @@ typedef struct observable {
   fragment_t       next_fragment;  // next fragment to be activated
 } observable;
 
+enum code {
+  AWAIT
+};
+
+// fragments are (in a away) observables waiting to be come active. observables
+// observe other observables, so a fragment contains information about this
+// other observable and an indication of which code is needed to activate it.
+struct fragment {
+  observable_t observed;
+  enum code    statement;
+};
+
 // constructors
 
 observable_t _new() {
@@ -123,7 +135,7 @@ void _update_args(observable_t this) {
   // optionally free existing list
   if(this->args != NULL) { free(this->args); }
   
-  // allocate memory
+  // allocate memory to hold cached list of pointers to observed values
   this->args = malloc(sizeof(void*)*count);
   
   // copy pointers to values
@@ -240,6 +252,93 @@ void _unlink_all_observeds(observable_t this) {
   }
 }
 
+// actually free the entire observable structure
+void _free(observable_t this) {
+  _unlink_all_observers(this);
+  _unlink_all_observeds(this);
+  if(this->args)  { free(this->args);  }
+  if(this->value) { free(this->value); }
+  free(this);
+}
+
+// check all observers and remove those that are marked for disposal
+void _gc(observable_t this) {
+  if(this->observers == NULL) { return; }
+
+  // garbage collect disposed observers
+  if(this->observers->ob->prop & DISPOSED) {    // first observer got disposed
+    observable_li_t temp = this->observers;
+    this->observers = this->observers->next;
+    _free(temp->ob);
+    free(temp);
+    return;
+  }
+  observable_li_t observer = this->observers;
+  while(observer->next) {
+    while(observer->next && (observer->next->ob->prop & DISPOSED)) {
+      observable_li_t temp = observer->next;
+      observer->next = observer->next->next;
+      _free(temp->ob);
+      free(temp);
+    }
+    observer = observer->next;
+  }
+}
+
+// internal observer function to merge value updates to multiple observables
+// into one "merged" observable observer.
+void _merge(void **args, void* self) {
+  observable_t merged = ((observable_t)self)->parent;
+  merged->value = args[0];
+
+  // cached args are out of date, because we're modifying the pointer itself
+  // force refresh cache on all observers of merged_ob
+  observable_li_t iter = merged->observers;
+  while(iter) {
+    _update_args(iter->ob);
+    iter = iter->next;
+  }
+
+  observe_update(merged);
+}
+
+// forward declaration
+observable_t _activate(fragment_t);
+
+void _next(observable_t script) {
+  if(script->next_fragment == NULL) { return; } // end of script
+
+  // activate
+  observable_t step = _activate(script->next_fragment);
+  step->parent = script;
+
+  // observe the new step
+  _add_observed(script, step);
+
+  // no next step (TODO: advance linked list)
+  script->next_fragment = NULL;
+}
+
+void _finalize_await(void **args, void *this) {
+  fprintf( stderr, "finalizing await\n" ); // for demo purposes ;-)
+  // dispose ourselves
+  dispose((observable_t)this);
+
+  // tell the script to move to the next step
+  _next(((observable_t)this)->parent);
+}
+
+observable_t _activate(fragment_t f) {
+  observable_t ob = NULL;
+  switch(f->statement) {
+    case AWAIT:
+      ob = observe(all(1, f->observed), _finalize_await, 0);
+      ob->prop |= OUT_IS_SELF;
+      free(f); // once activated this is no longer needed
+  }
+  return ob;
+}
+
 // public interface
 
 // turns a variadic list of observables into an linked list. this is a helper
@@ -295,39 +394,6 @@ void dispose(observable_t this) {
   this->prop |= DISPOSED;
 }
 
-// actually free the entire observable structure
-void _free(observable_t this) {
-  _unlink_all_observers(this);
-  _unlink_all_observeds(this);
-  if(this->args)  { free(this->args);  }
-  if(this->value) { free(this->value); }
-  free(this);
-}
-
-// check all observers and remove those that are marked for disposal
-void _gc(observable_t this) {
-  if(this->observers == NULL) { return; }
-
-  // garbage collect disposed observers
-  if(this->observers->ob->prop & DISPOSED) {    // first observer got disposed
-    observable_li_t temp = this->observers;
-    this->observers = this->observers->next;
-    _free(temp->ob);
-    free(temp);
-    return;
-  }
-  observable_li_t observer = this->observers;
-  while(observer->next) {
-    while(observer->next && (observer->next->ob->prop & DISPOSED)) {
-      observable_li_t temp = observer->next;
-      observer->next = observer->next->next;
-      _free(temp->ob);
-      free(temp);
-    }
-    observer = observer->next;
-  }
-}
-
 // trigger for (external) update of observable
 void observe_update(observable_t this) {
   // if we're marked for disposal (externally), we don't perform any processing
@@ -370,23 +436,6 @@ void *observable_value(observable_t observable) {
 
 // merging support
 
-// internal observer function to merge value updates to multiple observables
-// into one "merged" observable observer.
-void _merge(void **args, void* self) {
-  observable_t merged = ((observable_t)self)->parent;
-  merged->value = args[0];
-
-  // cached args are out of date, because we're modifying the pointer itself
-  // force refresh cache on all observers of merged_ob
-  observable_li_t iter = merged->observers;
-  while(iter) {
-    _update_args(iter->ob);
-    iter = iter->next;
-  }
-
-  observe_update(merged);
-}
-
 // create a single observable observer from a list of observed observables.
 observable_t merge(observable_li_t observed) {
   observable_t merged = observable_from_value(NULL);
@@ -423,66 +472,18 @@ observable_t addd(observable_t a, observable_t b) {
 
 // scripting support
 
-enum code {
-  AWAIT
-};
-
-struct fragment {
-  observable_t o;
-  enum code    statement;
-};
-
 // await fragment constructor
-fragment_t await(observable_t o) {
+fragment_t await(observable_t observed) {
   fragment_t f = malloc(sizeof(struct fragment));
   f->statement = AWAIT;
-  f->o = o;
+  f->observed = observed;
   return f;
 }
-
-// forward declaration
-observable_t _activate(fragment_t);
-
-void _next(observable_t script) {
-  if(script->next_fragment == NULL) { return; } // end of script
-
-  // activate
-  observable_t step = _activate(script->next_fragment);
-  step->parent = script;
-
-  // observe the new step
-  _add_observed(script, step);
-
-  // no next step (TODO: advance linked list)
-  script->next_fragment = NULL;
-}
-
-void _finalize_await(void **args, void *this) {
-  fprintf( stderr, "finalizing await\n" ); // for demo purposes ;-)
-  // dispose ourselves
-  dispose((observable_t)this);
-
-  // tell the script to move to the next step
-  _next(((observable_t)this)->parent);
-}
-
-observable_t _activate(fragment_t f) {
-  observable_t ob = NULL;
-  switch(f->statement) {
-    case AWAIT:
-      ob = observe(all(1, f->o), _finalize_await, 0);
-      ob->prop |= OUT_IS_SELF;
-      free(f); // once activated this is no longer needed
-  }
-  return ob;
-}
-
-void dummy(void **in, void *out) {}
 
 observable_t observable_from_script(fragment_t f1, fragment_t f2) {
   // activate first step
   observable_t step1 = _activate(f1);
-  observable_t script = observe(all(1, step1), dummy, 0);
+  observable_t script = observe(all(1, step1), NULL, 0);
   step1->parent = script;
   script->next_fragment = f2;
   // TODO: VARARGS -> linked list of fragments
