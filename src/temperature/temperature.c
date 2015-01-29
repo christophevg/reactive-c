@@ -33,7 +33,7 @@ int main(void) {
   temp_behavior_init();
 
   // create a new behviour that convers C to F
-  observable_t temp_f = observe(all(temp_behavior), c2f, sizeof(double));
+  observable_t temp_f = observe(just(temp_behavior), c2f, sizeof(double));
 
   // simulate changes to temp
   temp_update(16);

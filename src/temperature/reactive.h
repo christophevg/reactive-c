@@ -48,6 +48,7 @@ observables_t __all(int,...);  // this signature is used _after_ macro expansion
 // number of
 void all(observable_t, ...);
 #define all(...) __all(PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#define just(x) __all(1, x)
 
 // adds observers to a list of observables, providing memory space for its
 // value, based on its size

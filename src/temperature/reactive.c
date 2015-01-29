@@ -312,7 +312,7 @@ observable_t _activate(fragment_t f) {
   observable_t ob = NULL;
   switch(f->statement) {
     case AWAIT:
-      ob = observe(all(f->observed), _finalize_await, 0);
+      ob = observe(just(f->observed), _finalize_await, 0);
       ob->prop |= OUT_IS_SELF;
       free(f); // once activated this is no longer needed
   }
@@ -416,7 +416,7 @@ observable_t merge(observables_t observeds) {
   observable_t merged = observable_from_value(NULL);
   observable_li_t observed = observeds->first;
   while(observed) {
-    observable_t tmp = observe(all(observed->ob), _merge, 0);
+    observable_t tmp = observe(just(observed->ob), _merge, 0);
     tmp->prop |= OUT_IS_SELF;
     tmp->parent = merged;
     observed = observed->next;
@@ -427,7 +427,7 @@ observable_t merge(observables_t observeds) {
 // some API example functions
 
 observable_t map(observable_t observed, observer_t process, int size) {
-  return observe(all(observed), process, size);
+  return observe(just(observed), process, size);
 }
 
 void _addi(void **args, void *out) {
