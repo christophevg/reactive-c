@@ -3,4 +3,3 @@ TODO
 - introduce generic datatype ? aka variable_t - use union somehow?
 - make execution of observe_update async -> really needed?
 - observe = macro with type in stead of size
-  - maybe deprecate all(int,...), to trailing ...

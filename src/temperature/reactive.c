@@ -312,7 +312,7 @@ observable_t _activate(fragment_t f) {
   observable_t ob = NULL;
   switch(f->statement) {
     case AWAIT:
-      ob = observe(all(1, f->observed), _finalize_await, 0);
+      ob = observe(all(f->observed), _finalize_await, 0);
       ob->prop |= OUT_IS_SELF;
       free(f); // once activated this is no longer needed
   }
@@ -324,7 +324,7 @@ observable_t _activate(fragment_t f) {
 // turns a variadic list of observables into an linked list. this is a helper
 // function to allow calling observe(all(...) and pass a variable list of
 // observables)
-observables_t all(int count, ...) {
+observables_t __all(int count, ...) {
   va_list       ap;
   observables_t list = _new_observables_list();
   
@@ -416,7 +416,7 @@ observable_t merge(observables_t observeds) {
   observable_t merged = observable_from_value(NULL);
   observable_li_t observed = observeds->first;
   while(observed) {
-    observable_t tmp = observe(all(1, observed->ob), _merge, 0);
+    observable_t tmp = observe(all(observed->ob), _merge, 0);
     tmp->prop |= OUT_IS_SELF;
     tmp->parent = merged;
     observed = observed->next;
@@ -427,7 +427,7 @@ observable_t merge(observables_t observeds) {
 // some API example functions
 
 observable_t map(observable_t observed, observer_t process, int size) {
-  return observe(all(1, observed), process, size);
+  return observe(all(observed), process, size);
 }
 
 void _addi(void **args, void *out) {
@@ -439,11 +439,11 @@ void _addd(void **args, void *out) {
 }
 
 observable_t addi(observable_t a, observable_t b) {
-  return observe(all(2, a, b), _addi, sizeof(int));
+  return observe(all(a, b), _addi, sizeof(int));
 }
 
 observable_t addd(observable_t a, observable_t b) {
-  return observe(all(2, a, b), _addd, sizeof(double));
+  return observe(all(a, b), _addd, sizeof(double));
 }
 
 // scripting support
@@ -456,25 +456,22 @@ fragment_t await(observable_t observed) {
   return f;
 }
 
-observable_t observable_from_script(fragment_t f1, ...) {
-  // activate first step
-  observable_t step1 = _activate(f1);
-  observable_t script = observe(all(1, step1), NULL, 0);
-  step1->parent = script;
-
-  // construct linked list of fragments
+observable_t __observable_from_script(int count, ...) {
+  if(count<1) { return NULL; }
+  
+  observable_t script = _new();                   // no value/adapter (for now)
+   
   va_list ap;
-  va_start(ap, f1);
-  fragment_t f = NULL, fragments = NULL, last_fragment = NULL;
-  while((f = va_arg(ap, fragment_t)) != NULL) {
-    if(fragments == NULL) {
-      fragments = f;
-    } else {
-      last_fragment->next = f;
-    }
-    last_fragment = f;
+  va_start(ap, count);
+  script->next_fragment = va_arg(ap, fragment_t); // first due to count >= 1
+  fragment_t fragments = script->next_fragment;
+  for(int i=1; i<count; i++) {                    // remaining fragments
+    fragments->next = va_arg(ap, fragment_t);
+    fragments = fragments->next;
   }
   va_end(ap);
-  script->next_fragment = fragments;
+
+  _next(script);  // activates the first fragment in a consistent way
+
   return script;
 }

@@ -18,10 +18,10 @@ int main(void) {
   observable_t c = observable_from_value((void*)&_c);
 
   // create one that merges all three
-  observable_t abc = merge(all(3, a, b, c));
+  observable_t abc = merge(all(a, b, c));
 
   // observe all (three) updates in one go
-  observe(all(1, abc), display, 0);
+  observe(all(abc), display, 0);
 
   _a = 1;  observe_update(a);
   _b = 2;  observe_update(b);

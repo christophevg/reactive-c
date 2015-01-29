@@ -33,7 +33,7 @@ int main(void) {
   temp_behavior_init();
 
   // create a new behviour that convers C to F
-  observable_t temp_f = observe(all(1, temp_behavior), c2f, sizeof(double));
+  observable_t temp_f = observe(all(temp_behavior), c2f, sizeof(double));
 
   // simulate changes to temp
   temp_update(16);
@@ -50,7 +50,7 @@ int main(void) {
   // let's add an observer that displays the updates
 
   // display updates from now on using our display observer function
-  observable_t displayer = observe(all(2, temp_behavior, temp_f), display, 0);
+  observable_t displayer = observe(all(temp_behavior, temp_f), display, 0);
 
   temp_update(19);
   temp_update(20);
