@@ -11,7 +11,9 @@ int main(void) {
   
   observable_from_script(
     await(a),
-    await(b)
+    await(b),
+    await(a),
+    STOP
   );
 
   printf("b=1\n");
@@ -28,6 +30,15 @@ int main(void) {
 
   printf("b=3\n");
   _b = 3; observe_update(b);  // does nothing
+
+  printf("a=3\n");
+  _a = 3; observe_update(a);  // finalizes await(a)
+
+  printf("a=4\n");
+  _a = 4; observe_update(a);  // does nothing
+
+  printf("b=4\n");
+  _b = 4; observe_update(b);  // does nothing
   
   exit(EXIT_SUCCESS);
 }

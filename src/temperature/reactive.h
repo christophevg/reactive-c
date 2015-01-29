@@ -6,8 +6,8 @@
 // we're only exposing the observable type, the inner workings are private
 typedef struct observable *observable_t;
 
-// linked list item (LI) for observables. use all to create a list.
-typedef struct observable_li *observable_li_t;
+// and a (linked) list for observables. use all to create the list.
+typedef struct observables *observables_t;
 
 // an observer takes an array of arguments and a pointer to store its result
 typedef void (*observer_t)(void**, void*);
@@ -19,11 +19,11 @@ observable_t observable_from_value(void*);
 void *observable_value(observable_t);
 
 // turns a variadic list of observables into a linked list of observables
-observable_li_t all(int,...);
+observables_t all(int,...);
 
 // adds observers to a list of observables, providing memory space for its
 // value, based on its size
-observable_t observe(observable_li_t, observer_t, int);
+observable_t observe(observables_t, observer_t, int);
 
 // removed an observer from all observeds and releases it entirely
 void dispose(observable_t);
@@ -33,7 +33,7 @@ void observe_update(observable_t observable);
 
 // merge multiple observables, resulting in a single observable with interleaved
 // updates
-observable_t merge(observable_li_t);
+observable_t merge(observables_t);
 
 // maps an observable to something else ...
 observable_t map(observable_t, observer_t, int);
@@ -49,10 +49,12 @@ observable_t addd(observable_t, observable_t);
 
 // support for scripting
 
+#define STOP NULL
+
 typedef struct fragment *fragment_t;
 
 fragment_t await(observable_t);
 
-observable_t observable_from_script(fragment_t, fragment_t);
+observable_t observable_from_script(fragment_t, ...);
 
 #endif
