@@ -23,9 +23,9 @@ int main(void) {
   // map the observed value to something else
   observable_t A = map(a, convert, sizeof(char)*10);
   // which is basically a wrapper for...
-  // observable_t A = observe(just(a), convert, sizeof(char)*10);
+  // observable_t A = observe(just(a), convert, char, 10);
 
-  observe(just(A), display, 0);
+  observe(just(A), display);
 
   _a = 1;  observe_update(a);
   _a = 2;  observe_update(a);

@@ -312,7 +312,7 @@ observable_t _activate(fragment_t f) {
   observable_t ob = NULL;
   switch(f->statement) {
     case AWAIT:
-      ob = observe(just(f->observed), _finalize_await, 0);
+      ob = observe(just(f->observed), _finalize_await);
       ob->prop |= OUT_IS_SELF;
       free(f); // once activated this is no longer needed
   }
@@ -341,7 +341,7 @@ observables_t __all(int count, ...) {
 
 // start observing observed observables using an observer (function), storing
 // the resulting value in a memory location of size.
-observable_t observe(observables_t observeds, observer_t callback, int size) {
+observable_t __observe(observables_t observeds, observer_t callback, int size) {
   // step 1: turn the observer into an observable
   observable_t observer = observable_from_callback(callback, size);
 
@@ -416,7 +416,7 @@ observable_t merge(observables_t observeds) {
   observable_t merged = observable_from_value(NULL);
   observable_li_t observed = observeds->first;
   while(observed) {
-    observable_t tmp = observe(just(observed->ob), _merge, 0);
+    observable_t tmp = observe(just(observed->ob), _merge);
     tmp->prop |= OUT_IS_SELF;
     tmp->parent = merged;
     observed = observed->next;
@@ -439,11 +439,11 @@ void _addd(void **args, void *out) {
 }
 
 observable_t addi(observable_t a, observable_t b) {
-  return observe(all(a, b), _addi, sizeof(int));
+  return observe(all(a, b), _addi, int);
 }
 
 observable_t addd(observable_t a, observable_t b) {
-  return observe(all(a, b), _addd, sizeof(double));
+  return observe(all(a, b), _addd, double);
 }
 
 // scripting support

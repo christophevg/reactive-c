@@ -25,7 +25,7 @@ int main(void) {
   observable_t var2 = observable_from_value((void*)&_var2);
   
   // and one observable combination (aka behavior)
-  observable_t var3 = observe(all(var1, var2), lifted_add, sizeof(int));
+  observable_t var3 = observe(all(var1, var2), lifted_add, int);
 
   // simulate some events on all
   _var1 = 1;  observe_update(var1);

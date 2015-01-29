@@ -52,7 +52,16 @@ void all(observable_t, ...);
 
 // adds observers to a list of observables, providing memory space for its
 // value, based on its size
+observable_t __observe(observables_t, observer_t, int);
 observable_t observe(observables_t, observer_t, int);
+
+// allow observe() being called with optional arguments
+// via: http://stackoverflow.com/questions/11761703/
+#define __observe2(l,o) __observe(l,o,0)
+#define __observe3(l,o,t) __observe(l,o,sizeof(t))
+#define __observe4(l,o,t,m) __observe(l,o,sizeof(t)*m)
+#define GET_MACRO(_1,_2,_3,_4,NAME,...) NAME
+#define observe(...) GET_MACRO(__VA_ARGS__, __observe4, __observe3, __observe2)(__VA_ARGS__)
 
 // removed an observer from all observeds and releases it entirely
 void dispose(observable_t);
