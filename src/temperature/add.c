@@ -9,8 +9,8 @@ int main(void) {
   int _var1, _var2;
   
   // create two observable values
-  observable_t var1 = observable_from_value((void*)&_var1);
-  observable_t var2 = observable_from_value((void*)&_var2);
+  observable_t var1 = observe((void*)&_var1);
+  observable_t var2 = observe((void*)&_var2);
   
   // and one observable combination (aka behavior)
   observable_t var3 = addi(var1, var2);

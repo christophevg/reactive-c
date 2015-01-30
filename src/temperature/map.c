@@ -18,7 +18,7 @@ int main(void) {
   double _a;
   
   // observer a value
-  observable_t a = observable_from_value((void*)&_a);
+  observable_t a = observe((void*)&_a);
 
   // map the observed value to something else
   observable_t A = map(a, convert, sizeof(char)*10);

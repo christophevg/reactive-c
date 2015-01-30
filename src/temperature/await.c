@@ -6,10 +6,10 @@
 int main(void) {
   int _a = 0, _b = 0;
   
-  observable_t a = observable_from_value((void*)&_a);
-  observable_t b = observable_from_value((void*)&_b);
+  observable_t a = observe((void*)&_a);
+  observable_t b = observe((void*)&_b);
   
-  observable_from_script(
+  script(
     await(a),
     await(b),
     await(a),

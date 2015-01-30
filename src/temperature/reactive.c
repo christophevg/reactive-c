@@ -147,30 +147,6 @@ observable_t _new() {
   return observable;
 }
 
-// an ExternalValueObservable simply stores a pointer to some value in memory,
-// which is managed externally. when this value is updated, the observer_update
-// function should be called to activate the reactive behaviour associated with
-// it through this observable.
-observable_t observable_from_value(void* value) {
-  observable_t observable   = _new();
-  observable->prop          = VALUE;
-  observable->value         = value;
-  return observable;
-}
-
-// an ObservingObservable wraps and observer. every observer of observables is
-// inherently also an observable, due to the reactive nature of the underlying
-// data(stream). the function is an process that transforms the values of its
-// observed observables into its own current value. this value is externally
-// defined and its size should therefore be provided to allow memory allocation.
-observable_t observable_from_callback(observer_t observer, int size) {
-  observable_t observable   = _new();
-  observable->prop          = OBSERVER;
-  observable->value         = (void*)malloc(size);
-  observable->process       = observer;
-  return observable;
-}
-
 // private functionality
 
 // recompute the level for this observable. do this by computing the maximum
@@ -339,11 +315,25 @@ observables_t __all(int count, ...) {
   return list;
 }
 
+// an ExternalValueObservable simply stores a pointer to some value in memory,
+// which is managed externally. when this value is updated, the observer_update
+// function should be called to activate the reactive behaviour associated with
+// it through this observable.
+observable_t __observe_value(void* value) {
+  observable_t observable   = _new();
+  observable->prop          = VALUE;
+  observable->value         = value;
+  return observable;
+}
+
 // start observing observed observables using an observer (function), storing
 // the resulting value in a memory location of size.
 observable_t __observe(observables_t observeds, observer_t callback, int size) {
   // step 1: turn the observer into an observable
-  observable_t observer = observable_from_callback(callback, size);
+  observable_t observer   = _new();
+  observer->prop          = OBSERVER;
+  observer->value         = (void*)malloc(size);
+  observer->process       = callback;
 
   // step 2: add observeds and update the arguments list and our level in the
   // dependency graph
@@ -413,7 +403,7 @@ void *observable_value(observable_t observable) {
 
 // create a single observable observer from a list of observed observables.
 observable_t merge(observables_t observeds) {
-  observable_t merged = observable_from_value(NULL);
+  observable_t merged = observe(NULL);
   observable_li_t observed = observeds->first;
   while(observed) {
     observable_t tmp = observe(just(observed->ob), _merge);
@@ -456,7 +446,7 @@ fragment_t await(observable_t observed) {
   return f;
 }
 
-observable_t __observable_from_script(int count, ...) {
+observable_t __script(int count, ...) {
   if(count<1) { return NULL; }
   
   observable_t script = _new();                   // no value/adapter (for now)

@@ -4,7 +4,7 @@
 double temp = 123;
 
 void temp_behavior_init() {
-  temp_behavior = observable_from_value((void*)&temp);
+  temp_behavior = observe((void*)&temp);
 }
 
 // function to allow simulation of updates to temp behavior

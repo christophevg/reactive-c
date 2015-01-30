@@ -13,9 +13,9 @@ int main(void) {
   double _a, _b, _c;
   
   // create three basic observers
-  observable_t a = observable_from_value((void*)&_a);
-  observable_t b = observable_from_value((void*)&_b);
-  observable_t c = observable_from_value((void*)&_c);
+  observable_t a = observe((void*)&_a);
+  observable_t b = observe((void*)&_b);
+  observable_t c = observe((void*)&_c);
 
   // create one that merges all three
   observable_t abc = merge(all(a, b, c));

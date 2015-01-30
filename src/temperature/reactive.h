@@ -13,7 +13,7 @@ typedef struct observables *observables_t;
 typedef void (*observer_t)(void**, void*);
 
 // construct an observable from a (pointer to a) value
-observable_t observable_from_value(void*);
+observable_t __observe_value(void*);
 
 // retrieve the current value of the observable
 void *observable_value(observable_t);
@@ -50,6 +50,7 @@ void all(observable_t, ...);
 #define all(...) __all(PP_NARG(__VA_ARGS__), __VA_ARGS__)
 #define just(x) __all(1, x)
 
+
 // adds observers to a list of observables, providing memory space for its
 // value, based on its size
 observable_t __observe(observables_t, observer_t, int);
@@ -57,11 +58,12 @@ observable_t observe(observables_t, observer_t, int);
 
 // allow observe() being called with optional arguments
 // via: http://stackoverflow.com/questions/11761703/
+#define __observe1(v) __observe_value(v)
 #define __observe2(l,o) __observe(l,o,0)
 #define __observe3(l,o,t) __observe(l,o,sizeof(t))
 #define __observe4(l,o,t,m) __observe(l,o,sizeof(t)*m)
 #define GET_MACRO(_1,_2,_3,_4,NAME,...) NAME
-#define observe(...) GET_MACRO(__VA_ARGS__, __observe4, __observe3, __observe2)(__VA_ARGS__)
+#define observe(...) GET_MACRO(__VA_ARGS__, __observe4, __observe3, __observe2, __observe1)(__VA_ARGS__)
 
 // removed an observer from all observeds and releases it entirely
 void dispose(observable_t);
@@ -95,8 +97,8 @@ fragment_t await(observable_t);
 
 // same trick as with all(...)
 
-observable_t __observable_from_script(int, ...);
-observable_t observable_from_script(fragment_t, ...);
-#define observable_from_script(...); __observable_from_script(PP_NARG(__VA_ARGS__), __VA_ARGS__)
+observable_t __script(int, ...);
+observable_t script(fragment_t, ...);
+#define script(...); __script(PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
 #endif
