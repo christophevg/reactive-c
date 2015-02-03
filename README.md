@@ -59,8 +59,7 @@ void c2f(void **args, void *f) {
 int main(void) {
   observable_temp_init();
 
-  observable_t temp_f =
-    observe(just(observable_temp), c2f, double);
+  observable_t temp_f = observe(just(observable_temp), c2f, double);
   ...
 }
 ```
@@ -71,8 +70,7 @@ void display(void **args, void *_) {
   printf( "observable was updated to %fC/%fF\n",
           *(double*)(args[0]), *(double*)(args[1]) );
 }
-observable_t displayer =
-  observe(both(observable_temp, temp_f), display);
+observable_t displayer = observe(both(observable_temp, temp_f), display);
 ```
 
 Again we apply the `observe` constructor, now to observe both the `observable_temp` and `temp_f` observables. Notice the use of the helper constructors `just` and `both` to turn arbitrary lists of arguments in an array (technically a linked list) and pass it as the first argument to the `observe` constructor.
@@ -107,13 +105,11 @@ To avoid such a glitch, the concept of **levels** is introduced. A level is a nu
 One final basic operation is defined for observables: `dispose`. This allows the destruction of an observable, removing it from the dependency graph.
 
 ```c
-temp_update(19);
-// output: observable was updated to 19.000000C/66.200000F
+temp_update(19); // output: observable was updated to 19.000000C/66.200000F
 
 dispose(displayer);
 
-temp_update(22);
-// no output
+temp_update(22); // no output
 ```
 
 ### Merging (merging.c, map.c)
@@ -136,14 +132,9 @@ int main(void) {
 
   observe(just(abc), display);
 
-  _a = 1;  observe_update(a);
-  // output: current value = value: 1.000000.
-
-  _b = 2;  observe_update(b);
-  // output: current value = value: 2.000000.
-  
-  _c = 3;  observe_update(c);
-  // output: current value = value: 3.000000.
+  _a = 1;  observe_update(a);  // output: current value = value: 1.000000.
+  _b = 2;  observe_update(b);  // output: current value = value: 2.000000.
+  _c = 3;  observe_update(c);  // output: current value = value: 3.000000.
   ...
 }
 ```
@@ -166,14 +157,9 @@ int main(void) {
   observable_t A = map(a, double2string, char, 10);
   observe(just(A), display);
 
-  _a = 1;  observe_update(a);
-  // output: current value = value: 1.
-  
-  _a = 2;  observe_update(a);
-  // output: current value = value: 2.
-  
-  _a = 3;  observe_update(a);
-  // output: current value = value: 3.
+  _a = 1;  observe_update(a);  // output: current value = value: 1.  
+  _a = 2;  observe_update(a);  // output: current value = value: 2.  
+  _a = 3;  observe_update(a);  // output: current value = value: 3.
   ...
 }
 ```
@@ -205,8 +191,7 @@ int main(void) {
   _var1 = 1;  observe_update(var1);
   _var2 = 2;  observe_update(var2);
 
-  printf("%d + %d = %d\n", _var1, _var2,
-         *(int*)observable_value(var3));
+  printf("%d + %d = %d\n", _var1, _var2, *(int*)observable_value(var3));
   // output: 1 + 2 = 3
   ...
  }
@@ -233,9 +218,10 @@ int main(void) {
   _var1 = 1;  observe_update(var1);
   _var2 = 2;  observe_update(var2);
 
-  printf("%d + %d = %d\n", _var1, _var2,
-         *(int*)observable_value(var3));
+  printf("%d + %d = %d\n", _var1, _var2, *(int*)observable_value(var3));
   // output: 1 + 2 = 3
+  ...
+}
 ```
 
 Macro `lift2` will in fact expand in this case to:
