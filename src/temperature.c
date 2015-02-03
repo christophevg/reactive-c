@@ -5,7 +5,8 @@
 // in degrees Celcius
 
 #include <stdlib.h>
-#include <stdio.h>
+
+#include "unit/test.h"
 
 #include "reactive-c/reactive.h"
 
@@ -34,8 +35,8 @@ void c2f(void **args, void *f) {
 
 // a user defined display function to display both C and F values
 void display(void **args, void *_) {
-  printf( "observable was updated to %fC/%fF\n",
-          *(double*)(args[0]), *(double*)(args[1]) );
+  capture_printf( "observable was updated to %fC/%fF\n",
+                  *(double*)(args[0]), *(double*)(args[1]) );
 }
 
 //                 level
@@ -57,33 +58,59 @@ int main(void) {
   temp_update(17);
   temp_update(18);
   
-  // so far no output
+  assert_no_output();
   
-  // some debugging feedback
-  printf( "current temp=%f | temp_f=%f\n",
-          *(double*)observable_value(observable_temp),
-          *(double*)observable_value(temp_f));
+  assert_equal(
+    *(double*)observable_value(observable_temp),
+    18,
+    "Expected temperature to be 18C. Observed %f.\n",
+    *(double*)observable_value(observable_temp)
+  );
+  assert_equal(
+    *(double*)observable_value(temp_f),
+    18 * 1.8 + 32,
+    "Expected temperature to be %f. Observed %f.\n",
+    18 * 1.8 + 32,
+    *(double*)observable_value(temp_f)
+  );
 
-  // let's add an observer that displays the updates
-
-  // display updates from now on using our display observer function
+  // let's add an observer that displays the updates from now on using our
+  // display observer function
   observable_t displayer = observe(both(observable_temp, temp_f), display);
 
   temp_update(19);
   temp_update(20);
   temp_update(21);
   
+  assert_output_was(
+    "observable was updated to 19.000000C/66.200000F\n"
+    "observable was updated to 20.000000C/68.000000F\n"
+    "observable was updated to 21.000000C/69.800000F\n"
+  );
+
+  clear_output();
+
   dispose(displayer);
 
   temp_update(22);
   temp_update(23);
   temp_update(24);
 
-  // some debugging feedback
-  printf( "current temp=%f | temp_f=%f\n",
-          *(double*)observable_value(observable_temp),
-          *(double*)observable_value(temp_f));
-
+  assert_no_output();
+  
+  assert_equal(
+    *(double*)observable_value(observable_temp),
+    24,
+    "Expected temperature to be 18C. Observed %f.\n",
+    *(double*)observable_value(observable_temp)
+  );
+  assert_equal(
+    *(double*)observable_value(temp_f),
+    24 * 1.8 + 32,
+    "Expected temperature to be %f. Observed %f.\n",
+    24 * 1.8 + 32,
+    *(double*)observable_value(temp_f)
+  );
   dispose(temp_f);
 
   exit(EXIT_SUCCESS);

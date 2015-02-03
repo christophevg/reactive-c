@@ -1,7 +1,8 @@
 // demo of "lifting"
 
 #include <stdlib.h>
-#include <stdio.h>
+
+#include "unit/test.h"
 
 #include "reactive-c/reactive.h"
 
@@ -33,14 +34,19 @@ int main(void) {
 
   // at this point var3 is already updated, let's check that:
 
-  printf("%d + %d = %d\n", _var1, _var2, *(int*)observable_value(var3));
+  capture_printf("%d + %d = %d\n", _var1, _var2, *(int*)observable_value(var3));
+
+  assert_output_was( "1 + 2 = 3\n" );
+  clear_output();
 
   _var1 = 3;  observe_update(var1);
   _var2 = 5;  observe_update(var2);
 
   // at this point var3 is already (again) updated, let's check that (again):
 
-  printf("%d + %d = %d\n", _var1, _var2, *(int*)observable_value(var3));
+  capture_printf("%d + %d = %d\n", _var1, _var2, *(int*)observable_value(var3));
+
+  assert_output_was( "3 + 5 = 8\n" );
 
   exit(EXIT_SUCCESS);
 }

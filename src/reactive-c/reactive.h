@@ -1,8 +1,6 @@
 #ifndef __REACTIVE_H
 #define __REACTIVE_H
 
-#include <stdbool.h>
-
 // we're only exposing the observable type, the inner workings are private
 typedef struct observable *observable_t;
 
@@ -62,6 +60,11 @@ observable_t __observe_value(void*);
 #define GET_OBSERVE(_1,_2,_3,_4,NAME,...) NAME
 #define observe(...) GET_OBSERVE(__VA_ARGS__, __observe4, __observe3, __observe2, __observe1)(__VA_ARGS__)
 
+// add a callback to the observable, triggered when it is disposed
+typedef void (*observable_callback_t)(observable_t);
+observable_t on_dispose(observable_t, observable_callback_t);
+observable_t on_activation(observable_t, observable_callback_t);
+
 // remove an observer from all observeds and releases it entirely
 void dispose(observable_t);
 
@@ -97,7 +100,10 @@ typedef struct fragment *fragment_t;
 // script constructor takes a variable amount of fragments
 observable_t __script(int, ...);
 observable_t script(fragment_t, ...);
-#define script(...); __script(PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#define script(...) __script(PP_NARG(__VA_ARGS__), __VA_ARGS__)
+
+// explictly start a script
+observable_t run(observable_t);
 
 // fragment constructor to wait until an observable emits an update
 fragment_t await(observable_t);

@@ -1,12 +1,13 @@
 // demo for merging of observables
 
 #include <stdlib.h>
-#include <stdio.h>
+
+#include "unit/test.h"
 
 #include "reactive-c/reactive.h"
 
 void display(void **args, void* _) {
-  printf("current value = value: %f\n", *(double*)(args[0]));
+  capture_printf("current value = value: %f\n", *(double*)(args[0]));
 }
 
 int main(void) {
@@ -26,6 +27,12 @@ int main(void) {
   _a = 1;  observe_update(a);
   _b = 2;  observe_update(b);
   _c = 3;  observe_update(c);
+
+  assert_output_was(
+    "current value = value: 1.000000\n"
+    "current value = value: 2.000000\n"
+    "current value = value: 3.000000\n"
+  );
 
   exit(EXIT_SUCCESS);
 }

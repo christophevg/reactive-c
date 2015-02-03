@@ -3,10 +3,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "unit/test.h"
+
 #include "reactive-c/reactive.h"
 
 void display(void **args, void *_) {
-  printf("current value = value: %s.\n", (char*)(args[0]));
+  capture_printf("current value = value: %s.\n", (char*)(args[0]));
 }
 
 // converts double to string representation
@@ -30,6 +32,12 @@ int main(void) {
   _a = 1;  observe_update(a);
   _a = 2;  observe_update(a);
   _a = 3;  observe_update(a);
+
+  assert_output_was(
+    "current value = value: 1.\n"
+    "current value = value: 2.\n"
+    "current value = value: 3.\n"
+  );
 
   exit(EXIT_SUCCESS);
 }

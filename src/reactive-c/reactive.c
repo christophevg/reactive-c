@@ -1,8 +1,9 @@
 // reactive c
 
+#include <stdio.h>
+
 #include <stdlib.h>
 #include <stdarg.h>
-#include <stdio.h>
 #include <assert.h>
 
 #include "reactive.h"
@@ -114,6 +115,8 @@ typedef struct observable {
   observables_t  observers;      // first of observers
   observable_t   parent;         // helper field for storing creating parent
   fragment_t     next_fragment;  // next fragment to be activated
+  observable_callback_t  on_dispose;
+  observable_callback_t  on_activation;
 } observable;
 
 enum code {
@@ -129,6 +132,7 @@ struct fragment {
   observable_t observed;
   enum code    statement;
   fragment_t   next;
+  observable_t script;
 };
 
 // constructors
@@ -144,6 +148,8 @@ observable_t _new() {
   observable->observers     = _new_observables_list();
   observable->parent        = NULL;
   observable->next_fragment = NULL;
+  observable->on_dispose    = NULL;
+  observable->on_activation = NULL;
   return observable;
 }
 
@@ -276,7 +282,6 @@ void _next(observable_t script) {
 }
 
 void _finalize_await(void **args, void *this) {
-  fprintf( stderr, "finalizing await\n" ); // for demo purposes ;-)
   // dispose ourselves
   dispose((observable_t)this);
 
@@ -291,7 +296,12 @@ observable_t _activate(fragment_t f) {
       ob = observe(just(f->observed), _finalize_await);
       ob->prop |= OUT_IS_SELF;
       free(f); // once activated this is no longer needed
+      break;
+    default:
+      fprintf(stderr, "Unknown fragment statement '%d'.\n", f->statement);
+      abort();
   }
+  if(f->script->on_activation) { f->script->on_activation(ob); }
   return ob;
 }
 
@@ -350,9 +360,24 @@ observable_t __observe(observables_t observeds, observer_t callback, int size) {
   return observer;
 }
 
+// add a callback to the observable, triggered when it is disposed
+observable_t on_dispose(observable_t this, observable_callback_t callback) {
+  this->on_dispose = callback;
+  return this;
+}
+
+// add a callback to the observable, triggered when it is activated
+observable_t on_activation(observable_t this, observable_callback_t callback) {
+  this->on_activation = callback;
+  return this;
+}
+
 // marks an observable for disposing, which is honored when an update-push is
 // executed on it.
 void dispose(observable_t this) {
+  if(this->on_dispose) {
+    this->on_dispose(this);
+  }
   this->prop |= DISPOSED;
 }
 
@@ -444,6 +469,8 @@ fragment_t await(observable_t observed) {
   fragment_t f = malloc(sizeof(struct fragment));
   f->statement = AWAIT;
   f->observed = observed;
+  f->next     = NULL;
+  f->script   = NULL;
   return f;
 }
 
@@ -454,15 +481,24 @@ observable_t __script(int count, ...) {
    
   va_list ap;
   va_start(ap, count);
-  script->next_fragment = va_arg(ap, fragment_t); // first due to count >= 1
-  fragment_t fragments = script->next_fragment;
-  for(int i=1; i<count; i++) {                    // remaining fragments
-    fragments->next = va_arg(ap, fragment_t);
-    fragments = fragments->next;
+
+  // first due to count >= 1
+  script->next_fragment = va_arg(ap, fragment_t);
+  fragment_t fragment = script->next_fragment;
+  fragment->script = script;
+
+  // remaining fragments
+  for(int i=1; i<count; i++) {
+    fragment->next = va_arg(ap, fragment_t);
+    fragment = fragment->next;
+    fragment->script = script;
   }
   va_end(ap);
 
-  _next(script);  // activates the first fragment in a consistent way
+  return script;
+}
 
+observable_t run(observable_t script) {
+  _next(script);  // activates the first fragment in a consistent way
   return script;
 }

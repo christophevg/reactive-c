@@ -259,10 +259,12 @@ int main(void) {
   observable_t a = observe(_a);
   observable_t b = observe(_b);
   
-  script(
-    await(a),
-    await(b),
-    await(a)
+  run(
+    script(
+      await(a),
+      await(b),
+      await(a)
+    )
   );
   
   _b = 1; observe_update(b);  // does nothing
@@ -277,7 +279,9 @@ int main(void) {
 }
 ```
 
-A script consists of **fragments**, with each fragment being a statement from the DSL. The first example of such a fragment is `await`, which takes an observable and _pauses_ the script until it observes a change to the observable.
+A script consists of **fragments**, with each fragment being a statement from the DSL. A script must be `run`, before it actually executes the defined statements.
+
+The first example of such a fragment is `await`, which takes an observable and _pauses_ the script until it observes a change to the observable.
 
 Behind the scenes, the script takes this `await` fragment and implements it using an observable. Once the observing fragment has observed a change, the observer is disposed and the next fragment is activated.
 
