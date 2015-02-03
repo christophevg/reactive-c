@@ -402,8 +402,8 @@ void *observable_value(observable_t observable) {
 // merging support
 
 // create a single observable observer from a list of observed observables.
-observable_t merge(observables_t observeds) {
-  observable_t merged = observe(NULL);
+observable_t __merge(observables_t observeds) {
+  observable_t merged = __observe_value(NULL);
   observable_li_t observed = observeds->first;
   while(observed) {
     observable_t tmp = observe(just(observed->ob), _merge);
@@ -416,9 +416,10 @@ observable_t merge(observables_t observeds) {
 
 // some API example functions
 
-observable_t map(observable_t observed, observer_t process, int size) {
-  return observe(just(observed), process, size);
-}
+// NOTE: map is handled using macro expansion, in code it would look like this:
+// observable_t map(observable_t observed, observer_t process, int size) {
+//   return observe(just(observed), process, size);
+// }
 
 void _addi(void **args, void *out) {
   (*(int*)out) = (*(int*)(args[0])) + (*(int*)(args[1]));

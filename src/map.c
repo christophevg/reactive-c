@@ -10,20 +10,20 @@ void display(void **args, void *_) {
 }
 
 // converts double to string representation
-void convert(void **number, void *string) {
-  snprintf(((char*)string), 10, "%f", *(double*)(number[0]));
+void double2string(void **number, void *string) {
+  snprintf(((char*)string), 10, "%0.f", *(double*)(number[0]));
 }
 
 int main(void) {
   double _a;
   
   // observer a value
-  observable_t a = observe((void*)&_a);
+  observable_t a = observe(_a);
 
   // map the observed value to something else
-  observable_t A = map(a, convert, sizeof(char)*10);
+  observable_t A = map(a, double2string, char, 10);
   // which is basically a wrapper for...
-  // observable_t A = observe(just(a), convert, char, 10);
+  // observable_t A = observe(just(a), double2string, char, 10);
 
   observe(just(A), display);
 

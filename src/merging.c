@@ -13,12 +13,12 @@ int main(void) {
   double _a, _b, _c;
   
   // create three basic observers
-  observable_t a = observe((void*)&_a);
-  observable_t b = observe((void*)&_b);
-  observable_t c = observe((void*)&_c);
+  observable_t a = observe(_a);
+  observable_t b = observe(_b);
+  observable_t c = observe(_c);
 
   // create one that merges all three
-  observable_t abc = merge(all(a, b, c));
+  observable_t abc = merge(a, b, c);
 
   // observe all (three) updates in one go
   observe(just(abc), display);

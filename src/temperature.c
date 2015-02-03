@@ -9,18 +9,22 @@
 
 #include "reactive-c/reactive.h"
 
-// create an observable temperature value
+// to observe a value/variable...
 double temp = 123;
-observable_t temp_behavior;
-void temp_behavior_init() {
-  temp_behavior = observe((void*)&temp);
+
+// ...we create an observable...
+observable_t observable_temp;
+
+// ... and link it to the value/variable.
+void observable_temp_init() {
+  observable_temp = observe(temp);
 }
 
-// function to allow simulation of updates to temp behavior
+// when the value/variable is updated, we trigger the RP functionality
 void temp_update(double update) {
   temp = update;
   // trigger update propagation
-  observe_update(temp_behavior);
+  observe_update(observable_temp);
 }
 
 // a user defined convertion between Celcius and Farenheit
@@ -34,18 +38,19 @@ void display(void **args, void *_) {
           *(double*)(args[0]), *(double*)(args[1]) );
 }
 
-// temp_behavior 0    <-- update
-//   /     \
-// temp_f   |    1
-//   \     /
-//   display     2
+//                 level
+// observable_temp   0   <-- update
+//    /      \
+//   temp_f   |      1
+//     \     /
+//   displayer       2   --> printf
 
 int main(void) {
   // init temp behavior
-  temp_behavior_init();
+  observable_temp_init();
 
   // create a new behviour that convers C to F
-  observable_t temp_f = observe(just(temp_behavior), c2f, double);
+  observable_t temp_f = observe(just(observable_temp), c2f, double);
 
   // simulate changes to temp
   temp_update(16);
@@ -56,13 +61,13 @@ int main(void) {
   
   // some debugging feedback
   printf( "current temp=%f | temp_f=%f\n",
-          *(double*)observable_value(temp_behavior),
+          *(double*)observable_value(observable_temp),
           *(double*)observable_value(temp_f));
 
   // let's add an observer that displays the updates
 
   // display updates from now on using our display observer function
-  observable_t displayer = observe(all(temp_behavior, temp_f), display);
+  observable_t displayer = observe(both(observable_temp, temp_f), display);
 
   temp_update(19);
   temp_update(20);
@@ -76,7 +81,7 @@ int main(void) {
 
   // some debugging feedback
   printf( "current temp=%f | temp_f=%f\n",
-          *(double*)observable_value(temp_behavior),
+          *(double*)observable_value(observable_temp),
           *(double*)observable_value(temp_f));
 
   dispose(temp_f);

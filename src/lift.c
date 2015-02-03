@@ -21,11 +21,11 @@ int main(void) {
   int _var1, _var2;
   
   // create two observable values
-  observable_t var1 = observe((void*)&_var1);
-  observable_t var2 = observe((void*)&_var2);
+  observable_t var1 = observe(_var1);
+  observable_t var2 = observe(_var2);
   
   // and one observable combination (aka behavior)
-  observable_t var3 = observe(all(var1, var2), lifted_add, int);
+  observable_t var3 = observe(both(var1, var2), lifted(add), int);
 
   // simulate some events on all
   _var1 = 1;  observe_update(var1);

@@ -49,7 +49,7 @@ observables_t __all(int,...);  // this signature is used _after_ macro expansion
 void all(observable_t, ...);
 #define all(...) __all(PP_NARG(__VA_ARGS__), __VA_ARGS__)
 #define just(x) __all(1, x)
-
+#define both(x, y) __all(2, x, y)
 
 // adds observers to a list of observables, providing memory space for its
 // value, based on its size
@@ -58,12 +58,12 @@ observable_t observe(observables_t, observer_t, int);
 
 // allow observe() being called with optional arguments
 // via: http://stackoverflow.com/questions/11761703/
-#define __observe1(v) __observe_value(v)
+#define __observe1(v) __observe_value((void*)&v)
 #define __observe2(l,o) __observe(l,o,0)
 #define __observe3(l,o,t) __observe(l,o,sizeof(t))
-#define __observe4(l,o,t,m) __observe(l,o,sizeof(t)*m)
-#define GET_MACRO(_1,_2,_3,_4,NAME,...) NAME
-#define observe(...) GET_MACRO(__VA_ARGS__, __observe4, __observe3, __observe2, __observe1)(__VA_ARGS__)
+#define __observe4(l,o,t,s) __observe(l,o,sizeof(t)*s)
+#define GET_OBSERVE(_1,_2,_3,_4,NAME,...) NAME
+#define observe(...) GET_OBSERVE(__VA_ARGS__, __observe4, __observe3, __observe2, __observe1)(__VA_ARGS__)
 
 // removed an observer from all observeds and releases it entirely
 void dispose(observable_t);
@@ -73,19 +73,24 @@ void observe_update(observable_t observable);
 
 // merge multiple observables, resulting in a single observable with interleaved
 // updates
-observable_t merge(observables_t);
+observable_t __merge(observables_t);
+#define merge(...) __merge(all(__VA_ARGS__))
 
 // maps an observable to something else ...
-observable_t map(observable_t, observer_t, int);
+#define __map3(o,f,t) observe(just(o),f,t)
+#define __map4(o,f,t,s) observe(just(o),f,t,s)
+#define GET_MAP(_1, _2, _3, _4,NAME,...) NAME
+#define map(...) GET_MAP(__VA_ARGS__, __map4, __map3)(__VA_ARGS__)
 
 observable_t addi(observable_t, observable_t);
 observable_t addd(observable_t, observable_t);
 
 // demo for lifting through macro-expansion
 #define lift2(type, fun) \
-  void lifted_##fun(void **in, void *out) { \
+  void __lifted_##fun(void **in, void *out) { \
     *(type*)(out) = fun((*(type*)(in[0])), (*(type*)(in[1]))); \
   }
+#define lifted(x) __lifted_##x
 
 // support for scripting
 

@@ -6,14 +6,13 @@
 int main(void) {
   int _a = 0, _b = 0;
   
-  observable_t a = observe((void*)&_a);
-  observable_t b = observe((void*)&_b);
+  observable_t a = observe(_a);
+  observable_t b = observe(_b);
   
   script(
     await(a),
     await(b),
-    await(a),
-    STOP
+    await(a)
   );
 
   printf("b=1\n");
