@@ -1,5 +1,4 @@
 PROJECT   = temperature
-APPS      = temperature merging map add lift await
 SRC_DIR   = src
 BUILD_DIR = bin
 
@@ -8,21 +7,16 @@ CD        = cd
 CMAKE		  = cmake
 RM			  = rm -rf
 
-SRCS      = $(wildcard ${SRC_DIR}/${PROJECT}/*.c) \
-	 					$(wildcard ${SRC_DIR}/${PROJECT}/*.h)
-
-BINS			= $(addprefix ${BUILD_DIR}/, ${APPS})
-
 all: clean run
 
-run: ${BINS}
-	@for bin in $^; do echo "*** executing $${bin}"; ./$${bin}; done
+${BUILD_DIR}/Makefile: ${BUILD_DIR}
+	@(${CD} $<; ${CMAKE} ../${SRC_DIR}/${PROJECT})
 
-${BINS}: ${BUILD_DIR}/Makefile ${SRCS}
+build: ${BUILD_DIR}/Makefile
 	@(${CD} ${BUILD_DIR}; ${MAKE})
 
-${BUILD_DIR}/Makefile: ${BUILD_DIR}
-	@(${CD} ${BUILD_DIR}; ${CMAKE} ../${SRC_DIR}/${PROJECT})
+run: build
+	@(${CD} ${BUILD_DIR}; ${MAKE} run)
 
 ${BUILD_DIR}:
 	@${MKDIR} $@
@@ -30,4 +24,4 @@ ${BUILD_DIR}:
 clean:
 	@${RM} ${BUILD_DIR}
 
-.PHONY: all run clean
+.PHONY: all build run clean

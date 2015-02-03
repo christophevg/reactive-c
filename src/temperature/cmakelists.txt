@@ -1,4 +1,5 @@
 project (reactive)
+cmake_minimum_required(VERSION 3.0)
 
 add_executable(temperature
   temperature.c
@@ -29,4 +30,15 @@ add_executable(lift
 add_executable(await
   await.c
   reactive.c
+)
+
+add_custom_target(run
+  DEPENDS temperature merging map add lift await
+  COMMENT "Running all examples..."
+  COMMAND ./temperature
+  COMMAND ./merging
+  COMMAND ./map
+  COMMAND ./add
+  COMMAND ./lift
+  COMMAND ./await
 )
