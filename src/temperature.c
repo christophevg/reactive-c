@@ -7,9 +7,21 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "reactive.h"
+#include "reactive-c/reactive.h"
 
-#include "temp_behavior.h"
+// create an observable temperature value
+double temp = 123;
+observable_t temp_behavior;
+void temp_behavior_init() {
+  temp_behavior = observe((void*)&temp);
+}
+
+// function to allow simulation of updates to temp behavior
+void temp_update(double update) {
+  temp = update;
+  // trigger update propagation
+  observe_update(temp_behavior);
+}
 
 // a user defined convertion between Celcius and Farenheit
 void c2f(void **args, void *f) {

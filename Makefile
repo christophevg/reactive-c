@@ -1,4 +1,3 @@
-PROJECT   = temperature
 SRC_DIR   = src
 BUILD_DIR = bin
 
@@ -10,7 +9,7 @@ RM			  = rm -rf
 all: clean run
 
 ${BUILD_DIR}/Makefile: ${BUILD_DIR}
-	@(${CD} $<; ${CMAKE} ../${SRC_DIR}/${PROJECT})
+	@(${CD} $<; ${CMAKE} ../${SRC_DIR})
 
 build: ${BUILD_DIR}/Makefile
 	@(${CD} ${BUILD_DIR}; ${MAKE})

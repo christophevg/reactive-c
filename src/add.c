@@ -1,21 +1,9 @@
-// demo of "lifting"
+// demo for "add"
 
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "reactive.h"
-
-// "a" function taking two integers and returning an int
-int add(int a, int b) {
-  return a + b;
-}
-
-lift2(int, add);
-
-// expands to...
-// void lifted_add(void **in, void *out) {
-//   *(int*)(out) = add((*(int*)(in[0])), (*(int*)(in[1])));
-// }
+#include "reactive-c/reactive.h"
 
 int main(void) {
   int _var1, _var2;
@@ -25,7 +13,7 @@ int main(void) {
   observable_t var2 = observe((void*)&_var2);
   
   // and one observable combination (aka behavior)
-  observable_t var3 = observe(all(var1, var2), lifted_add, int);
+  observable_t var3 = addi(var1, var2);
 
   // simulate some events on all
   _var1 = 1;  observe_update(var1);

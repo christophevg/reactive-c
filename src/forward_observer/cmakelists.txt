@@ -1,9 +1,0 @@
-project (forward_observer)
-add_executable(forward_observer 
-  main.c
-  simulation.c
-  observer.c
-  clock_observable.c
-  network_observable.c
-  forward_observer.c
-)

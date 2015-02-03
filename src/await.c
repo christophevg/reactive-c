@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "reactive.h"
+#include "reactive-c/reactive.h"
 
 int main(void) {
   int _a = 0, _b = 0;

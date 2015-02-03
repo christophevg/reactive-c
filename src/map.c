@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "reactive.h"
+#include "reactive-c/reactive.h"
 
 void display(void **args, void *_) {
   printf("current value = value: %s.\n", (char*)(args[0]));
