@@ -6,6 +6,22 @@
 
 #include "reactive-c/reactive.h"
 
+void _addi(void **args, void *out) {
+  (*(int*)out) = (*(int*)(args[0])) + (*(int*)(args[1]));
+}
+
+void _addd(void **args, void *out) {
+  (*(double*)out) = (*(double*)(args[0])) + (*(double*)(args[1]));
+}
+
+observable_t addi(observable_t a, observable_t b) {
+  return observe(all(a, b), _addi, int);
+}
+
+observable_t addd(observable_t a, observable_t b) {
+  return observe(all(a, b), _addd, double);
+}
+
 int main(void) {
   int _var1, _var2;
   

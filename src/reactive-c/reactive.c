@@ -450,23 +450,6 @@ observable_t __merge(observables_t observeds) {
 // observable_t map(observable_t observed, observer_t process, int size) {
 //   return observe(just(observed), process, size);
 // }
-
-void _addi(void **args, void *out) {
-  (*(int*)out) = (*(int*)(args[0])) + (*(int*)(args[1]));
-}
-
-void _addd(void **args, void *out) {
-  (*(double*)out) = (*(double*)(args[0])) + (*(double*)(args[1]));
-}
-
-observable_t addi(observable_t a, observable_t b) {
-  return observe(all(a, b), _addi, int);
-}
-
-observable_t addd(observable_t a, observable_t b) {
-  return observe(all(a, b), _addd, double);
-}
-
 // scripting support
 
 // await fragment constructor
