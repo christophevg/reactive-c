@@ -44,21 +44,27 @@ observables_t __all(int,...);  // this signature is used _after_ macro expansion
 #define just(x)    __all(1, x)
 #define both(x, y) __all(2, x, y)
 
-// adds observers to a list of observables, providing memory space for its
-// value, based on its size
-observable_t __observe(observables_t, observer_t, int);
+// adds observer to a list of observables, providing memory space for its value,
+// based on its size
+observable_t __observing(observables_t, observer_t, int);
 
 // construct an observable from a (pointer to a) value
-observable_t __observe_value(void*);
+observable_t __observing_value(void*);
 
 // allow observe() being called with optional arguments
 // via: http://stackoverflow.com/questions/11761703/
-#define __observe1(v)       __observe_value((void*)&v)
-#define __observe2(l,o)     __observe(l,o,0)
-#define __observe3(l,o,t)   __observe(l,o,sizeof(t))
-#define __observe4(l,o,t,s) __observe(l,o,sizeof(t)*s)
-#define GET_OBSERVE(_1,_2,_3,_4,NAME,...) NAME
-#define observe(...) GET_OBSERVE(__VA_ARGS__, __observe4, __observe3, __observe2, __observe1)(__VA_ARGS__)
+#define __o1(v)       __observing_value((void*)&v)
+#define __o2(l,o)     __observing(l,o,0)
+#define __o3(l,o,t)   __observing(l,o,sizeof(t))
+#define __o4(l,o,t,s) __observing(l,o,sizeof(t)*s)
+#define __ox(_1,_2,_3,_4,NAME,...) NAME
+#define observing(...) __ox(__VA_ARGS__, __o4, __o3, __o2, __o1)(__VA_ARGS__)
+
+// acrually starts and observable
+observable_t start(observable_t);
+
+// helper macro to combine creation and activation
+#define observe(...) start(observing(__VA_ARGS__))
 
 // add a callback to the observable, triggered when it is disposed
 typedef void (*observable_callback_t)(observable_t);
@@ -77,10 +83,10 @@ observable_t __merge(observables_t);
 #define merge(...) __merge(all(__VA_ARGS__))
 
 // maps an observable to something else ...
-#define __map3(o,f,t)   observe(just(o),f,t)
-#define __map4(o,f,t,s) observe(just(o),f,t,s)
-#define GET_MAP(_1, _2, _3, _4,NAME,...) NAME
-#define map(...) GET_MAP(__VA_ARGS__, __map4, __map3)(__VA_ARGS__)
+#define __m3(o,f,t)   observe(just(o),f,t)
+#define __m4(o,f,t,s) observe(just(o),f,t,s)
+#define __mx(_1, _2, _3, _4,NAME,...) NAME
+#define map(...) __mx(__VA_ARGS__, __m4, __m3)(__VA_ARGS__)
 
 observable_t addi(observable_t, observable_t);
 observable_t addd(observable_t, observable_t);

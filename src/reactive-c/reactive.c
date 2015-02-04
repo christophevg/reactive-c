@@ -329,35 +329,40 @@ observables_t __all(int count, ...) {
 // which is managed externally. when this value is updated, the observer_update
 // function should be called to activate the reactive behaviour associated with
 // it through this observable.
-observable_t __observe_value(void* value) {
-  observable_t observable   = _new();
-  observable->prop          = VALUE;
-  observable->value         = value;
-  return observable;
+observable_t __observing_value(void* value) {
+  observable_t this = _new();
+  this->prop        = VALUE;
+  this->value       = value;
+  return this;
 }
 
-// start observing observed observables using an observer (function), storing
-// the resulting value in a memory location of size.
-observable_t __observe(observables_t observeds, observer_t callback, int size) {
-  // step 1: turn the observer into an observable
-  observable_t observer   = _new();
-  observer->prop          = OBSERVER;
-  observer->value         = (void*)malloc(size);
-  observer->process       = callback;
+// create an observable observer (function), storing the resulting value in a
+// memory location of size.
+observable_t __observing(observables_t observeds, observer_t observer, int size) {
+  // turn the observer into an observable
+  observable_t this = _new();
+  this->prop        = OBSERVER;
+  this->value       = (void*)malloc(size);
+  this->process     = observer;
+  this->observeds   = observeds;    // this is already partial in the graph
+                                    // but cannot be used, no back-links
+  return this;
+}
 
-  // step 2: add observeds and update the arguments list and our level in the
+// actually connect the observable in the dependecy graph
+observable_t start(observable_t this) {
+  // step 1: add observeds and update the arguments list and our level in the
   // dependency graph
-  observer->observeds = observeds;
-  _update_args(observer);
-  _update_level(observer);
+  _update_args(this);
+  _update_level(this);
 
-  // step 3: add a back-link to the observer to all observeds
-  observable_li_t iter = observeds->first;
+  // step 2: add a back-link to the observer to all observeds
+  observable_li_t iter = this->observeds->first;
   while(iter) {
-    _add_observable(iter->ob->observers, observer);
+    _add_observable(iter->ob->observers, this);
     iter = iter->next;
   }
-  return observer;
+  return this;
 }
 
 // add a callback to the observable, triggered when it is disposed
@@ -428,7 +433,7 @@ void *observable_value(observable_t observable) {
 
 // create a single observable observer from a list of observed observables.
 observable_t __merge(observables_t observeds) {
-  observable_t merged = __observe_value(NULL);
+  observable_t merged = __observing_value(NULL);
   observable_li_t observed = observeds->first;
   while(observed) {
     observable_t tmp = observe(just(observed->ob), _merge);
