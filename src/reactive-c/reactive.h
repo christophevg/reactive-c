@@ -100,18 +100,15 @@ observable_t addd(observable_t, observable_t);
 
 // support for scripting
 
-// a script consist of fragments
-typedef struct fragment *fragment_t;
-
-// script constructor takes a variable amount of fragments
+// script constructor takes a variable amount of (inactive) observables
 observable_t __script(int, ...);
-observable_t script(fragment_t, ...);
+observable_t script(observable_t, ...);
 #define script(...) __script(PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
 // explictly start a script
 observable_t run(observable_t);
 
-// fragment constructor to wait until an observable emits an update
-fragment_t await(observable_t);
+// morphing constructor to wait until an observable emits an update
+observable_t await(observable_t);
 
 #endif
