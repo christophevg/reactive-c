@@ -240,9 +240,9 @@ void _merge(void **args, void* this) {
 
 observable_t _step(observable_t script) {
   observable_t step = script->next;
-  if(step == NULL) { return script; } // end of script
+  if(step == NULL) { return NULL; } // end of script
 
-  // prepare for next fragment (before _activate because it frees the fragment)
+  // prepare for next step
   script->next = step->next;
 
   // start
@@ -254,7 +254,7 @@ observable_t _step(observable_t script) {
   // observe the new step (future use)
   // _add_observable(script->observeds, step);
   
-  return script;
+  return step;
 }
 
 void _finalize_await(void **args, void *this) {
@@ -425,7 +425,7 @@ observable_t __script(int count, ...) {
   observable_t step = script->next;
   step->parent = script;
 
-  // remaining fragments
+  // remaining steps
   for(int i=1; i<count; i++) {
     step->next = va_arg(ap, observable_t);
     step = step->next;
@@ -437,5 +437,5 @@ observable_t __script(int count, ...) {
 }
 
 observable_t run(observable_t script) {
-  return _step(script);  // activates the first fragment in a consistent way
+  return _step(script);  // activates the first step in a consistent way
 }
