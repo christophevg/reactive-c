@@ -15,11 +15,11 @@ void _addd(void **args, void *out) {
 }
 
 observable_t addi(observable_t a, observable_t b) {
-  return observe(all(a, b), _addi, int);
+  return observe(each(a, b), _addi, int);
 }
 
 observable_t addd(observable_t a, observable_t b) {
-  return observe(all(a, b), _addd, double);
+  return observe(each(a, b), _addd, double);
 }
 
 int main(void) {

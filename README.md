@@ -75,7 +75,7 @@ observable_t displayer = observe(both(observable_temp, temp_f), display);
 
 Again we apply the `observe` constructor, now to observe both the `observable_temp` and `temp_f` observables. Notice the use of the helper constructors `just` and `both` to turn arbitrary lists of arguments in an array (technically a linked list) and pass it as the first argument to the `observe` constructor.
 
-**Note**: Besides `just`, which accepts a single argument, and `both` which accepts two arguments, the generic `all` accepts a variable number of arguments. The former are macro's transforming them in calls to `all`.
+**Note**: Besides `just`, which accepts a single argument, and `both` which accepts two arguments, the generic `each` accepts a variable number of arguments. The former are macro's transforming them in calls to `each`.
 
 **Note**: The `observe` constructor is in fact also a collection of macro's. Depending on the number of arguments, if actually calls different `observe` implementations. Given a single argument, the argument is treated as a _value_. Because each value must be referenced and cast to `void*`, the macro expansion will take care of this, allowing a clean call to `observe` simply passing the variable name.  
 With two arguments, the first argument is a _list of observables_ and the second an _observer_ (function) _that doesn't produce output_. Adding a third argument defines the _type_ of the output produced by the observer (function). Finally, a fourth argument can be used to turn the output type in an array of the given _size_.
@@ -177,7 +177,7 @@ void _addi(void **args, void *out) {
 }
 
 observable_t addi(observable_t a, observable_t b) {
-  return observe(all(a, b), _addi, int);
+  return observe(each(a, b), _addi, int);
 }
 
 int main(void) {

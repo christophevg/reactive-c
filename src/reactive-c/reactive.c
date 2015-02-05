@@ -223,7 +223,7 @@ observable_t _gc(observable_t this) {
 
 // internal observer function to merge value updates to multiple observables
 // into one "merged" observable observer.
-void _merge(void **args, void* this) {
+void _merging_handler(void **args, void* this) {
   observable_t merged = ((observable_t)this)->parent;
   merged->value = args[0];
 
@@ -266,9 +266,9 @@ void _finalize_await(void **args, void *this) {
 }
 
 // turns a variadic list of observables into an linked list. this is a helper
-// function to allow calling observe(all(...) and pass a variable list of
+// function to allow calling observe(each(...) and pass a variable list of
 // observables)
-observables_t __all(int count, ...) {
+observables_t __each(int count, ...) {
   va_list       ap;
   observables_t list = _new_observables_list();
   
@@ -352,7 +352,7 @@ void observe_update(observable_t this) {
 
   // if we have a process execute it
   if(this->process != NULL) {
-    // if the process is the internal _merge, we pass the parent, not the value
+    // do we pass the value or the object itself?
     if(this->prop & OUT_IS_SELF) {
       this->process(this->args, this);
     } else {
@@ -394,7 +394,7 @@ observable_t __merge(observables_t observeds) {
   observable_t merged = __observing_value(NULL);
   observable_li_t observed = observeds->first;
   while(observed) {
-    observable_t tmp = observe(just(observed->ob), _merge);
+    observable_t tmp = observe(just(observed->ob), _merging_handler);
     tmp->prop |= OUT_IS_SELF;
     tmp->parent = merged;
     observed = observed->next;
