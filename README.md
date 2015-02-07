@@ -95,7 +95,7 @@ observable_temp   0    <-- update
     /     \
  temp_f    |      1
     \     /
-   displayer       2    --> printf
+   displayer      2    --> printf
 
 ```
 A glitch can appear if we don't take these dependencies into account when propagating the _update_ through the graph. The `displayer` observer can only be updated when both observables that it depends on are updated.
