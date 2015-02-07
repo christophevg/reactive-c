@@ -29,14 +29,14 @@ void temp_update(double update) {
 }
 
 // a user defined convertion between Celcius and Farenheit
-void c2f(void **args, void *f) {
-  (*(double*)(f)) = ( (*(double*)(args[0])) * 1.8 ) + 32;
+void c2f(observation_t ob) {
+  (*(double*)(ob->observer)) = ( (*(double*)(ob->observeds[0])) * 1.8 ) + 32;
 }
 
 // a user defined display function to display both C and F values
-void display(void **args, void *_) {
+void display(observation_t ob) {
   capture_printf( "observable was updated to %fC/%fF\n",
-                  *(double*)(args[0]), *(double*)(args[1]) );
+                  *(double*)(ob->observeds[0]), *(double*)(ob->observeds[1]) );
 }
 
 //                 level

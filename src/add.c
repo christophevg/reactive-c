@@ -6,12 +6,14 @@
 
 #include "reactive-c/reactive.h"
 
-void _addi(void **args, void *out) {
-  (*(int*)out) = (*(int*)(args[0])) + (*(int*)(args[1]));
+void _addi(observation_t ob) {
+  (*(int*)ob->observer) =
+    (*(int*)(ob->observeds[0])) + (*(int*)(ob->observeds[1]));
 }
 
-void _addd(void **args, void *out) {
-  (*(double*)out) = (*(double*)(args[0])) + (*(double*)(args[1]));
+void _addd(observation_t ob) {
+  (*(double*)ob->observer) =
+    (*(double*)(ob->observeds[0])) + (*(double*)(ob->observeds[1]));
 }
 
 observable_t addi(observable_t a, observable_t b) {

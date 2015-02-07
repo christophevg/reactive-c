@@ -1,14 +1,22 @@
 # Reactive C
 
-An experiment on implementing reactive programming (RP) ideas in pure C.  
+An experiment on implementing a reactive programming (RP) API in pure C.  
 Christophe VG (<contact@christophe.vg>)  
 [https://github.com/christophevg/reactive-c](https://github.com/christophevg/reactive-c)
 
 ## Introduction
 
-The origin of this experiment is the paper titled "[Deprecating the Observer Pattern with Scale.React](http://infoscience.epfl.ch/record/176887/files/DeprecatingObservers2012.pdf)". The goal of this experiment is to implement the RP ideas from this paper in C, thus making it available to e.g. embedded development in C.
+The origin of this experiment is the paper titled "[Deprecating the Observer Pattern with Scale.React](http://infoscience.epfl.ch/record/176887/files/DeprecatingObservers2012.pdf)". The goal of this experiment is to implement a RP API in C, thus making it available to e.g. embedded development in C.
+
+### What do I consider RP?
 
 The core of RP is an extended implementation of the observer pattern, or as I like to call it "_The Observer Pattern on Steroids_". There is no black magic in reactive programming, just a nice(r) API to construct and compose observers and observables. (IHMO)
+
+### Why embedded?
+
+Although RP typically focuses on UI development and proposes a solution to its (so called) callback hell, it is not difficult to see a strong link to embedded development. In stead of user interaction, the events that require observation now are changes in (digital and analogue) signals on IO ports,...
+
+Being able to deal with these changes in a more natural way, might also prove to be beneficial to embedded development... if the incurred cost is acceptable.
 
 ### The Million $ Question
 
@@ -45,15 +53,18 @@ void temp_update(double update) {
 
 Given this basic observable, we can now observe it using an observer (function). We again use the `observe` constructor. This time we don't provide a reference to a variable, but provide it a list of observables, an observer function and the type of the output of that observer (function).
 
-**Compromise #1**: C is statically typed. This means that an observer function also needs to be statically typed. To allow any kind of arguments and result, we need to resort to `void*` and **explicit casts** whenever we want to access these values.
+**Compromise #1**: C is statically typed. This means that an observer function also needs to be statically typed. To allow any kind of arguments and result, we need to resort to `void*` (which we also define as `unknown_t`) and **explicit casts** whenever we want to access these values.
 
-An observer (function) has to adhere to the `observer_t` type, which is defined as `typedef void (*observer_t)(void**, void*);`. The first argument is an array of `void*` arguments, used by the observer (function). The second argument is pointer to a `void` result variable to hold the output of the observer (function).
+An observer (function) has to adhere to the `observer_t` type, which is defined as `typedef void (*observer_t)(observation_t);`. Such an `observation_t` consists of components:
 
-**Compromise #2**: This output value also needs to be stored in memory somehow. Again, because C is statically typed and it provides no ways to access the type of a function through reflection, we also need to explicitly provide it to the `observe` constructor.
+1. an array of `unknown_t` arguments, used by the observer (function) as input. 
+2. a pointer to a single `unknown_t` result variable to hold the output of the observer (function).
+
+**Compromise #2**: The output value also needs to be stored in memory somehow. Again, because C is statically typed and it provides no ways to access the type of a function through reflection, we also need to explicitly provide it to the `observe` constructor.
 
 ```c
-void c2f(void **args, void *f) {
-  (*(double*)(f)) = ( (*(double*)(args[0])) * 1.8 ) + 32;
+void c2f(observation_t ob) {
+  (*(double*)(ob->observer)) = ( (*(double*)(ob->observeds[0])) * 1.8 ) + 32;
 }
 
 int main(void) {
@@ -63,12 +74,12 @@ int main(void) {
   ...
 }
 ```
-Note that observing some observable value, using an observer (function) also implies the creation of a new observable. Whenever the observed value changes, the observer (function) will be executed, resulting in a new value, which in itself becomes observable. So we now can also observe `temp_f`, which is the temperature converted to Fahrenheit
+Note that observing some observable value, using an observer (function) also implies the creation of a new observable. Whenever the observed value changes, the observer (function) will be executed, resulting in an updated value. This way it becomes an observable. So we now can also observe `temp_f`, which is the temperature converted to Fahrenheit.
 
 ```c
-void display(void **args, void *_) {
+void display(observable_t ob) {
   printf( "observable was updated to %fC/%fF\n",
-          *(double*)(args[0]), *(double*)(args[1]) );
+          *(double*)(ob->observed[0]), *(double*)(ob->observed[1]) );
 }
 observable_t displayer = observe(both(observable_temp, temp_f), display);
 ```
@@ -77,17 +88,17 @@ Again we apply the `observe` constructor, now to observe both the `observable_te
 
 **Note**: Besides `just`, which accepts a single argument, and `both` which accepts two arguments, the generic `each` accepts a variable number of arguments. The former are macro's transforming them in calls to `each`.
 
-**Note**: The `observe` constructor is in fact also a collection of macro's. Depending on the number of arguments, if actually calls different `observe` implementations. Given a single argument, the argument is treated as a _value_. Because each value must be referenced and cast to `void*`, the macro expansion will take care of this, allowing a clean call to `observe` simply passing the variable name.  
-With two arguments, the first argument is a _list of observables_ and the second an _observer_ (function) _that doesn't produce output_. Adding a third argument defines the _type_ of the output produced by the observer (function). Finally, a fourth argument can be used to turn the output type in an array of the given _size_.
+**Note**: The `observe` constructor is in fact a collection of macro's. Depending on the number of arguments, it actually calls different `observe` implementations. Given a single argument, the argument is treated as a _value_. Because _every_ value must be referenced and cast to `void*` or `unknown_t`, the macro expansion will take care of this, allowing a clean call to `observe` simply passing the variable name.  
+With two arguments, the first argument is a _list of observables_ and the second an _observer_ (function) _that doesn't produce output_. Adding a third argument defines the _type_ of the output produced by the observer (function). Finally, a fourth argument can be used to turn the output _type_ in an array of the given _size_.
 
-When we now update the initial temperature, the two observers will be triggered and will compute the temperature in Fahrenheit and display both values.
+When we update the initial temperature, the two observers will be triggered and will compute the temperature in Fahrenheit and display both values.
 
 ```c
 temp_update(19);
 // output: observable was updated to 19.000000C/66.200000F
 ```
 
-Although simple at first sight, this construction already introduces an important problem with observers: **glitches**. To understand this problem, we need to introduce the concept of a **dependency graph**. The three observables depend on each other: `temp_f` depends on `observable_temp` and `display` the both of them. We can visualize these dependencies in graph:
+Although simple at first sight, this construction already introduces an important problem with observers: **glitches**. To understand this problem, we need to introduce the concept of a **dependency graph**. Three observables depend on each other: `temp_f` depends on `observable_temp` and `display` on both of them. We can visualize these dependencies in graph:
 
 ```
                 level
@@ -98,9 +109,9 @@ observable_temp   0    <-- update
    displayer      2    --> printf
 
 ```
-A glitch can appear if we don't take these dependencies into account when propagating the _update_ through the graph. The `displayer` observer can only be updated when both observables that it depends on are updated.
+A glitch can appear if we don't take these dependencies into account when propagating an _update_ through the graph. The `displayer` observer can only be updated when both observables that it depends on are updated.
 
-To avoid such a glitch, the concept of **levels** is introduced. A level is a numeric property of an observable, indicating its depth in the dependency graph. Updates are propagated through the dependency graph one level at a time, guaranteeing that all observed observables are consistent with respect to the update.
+To avoid such a glitch, the concept of **levels** is introduced, internally. A level is a numeric property of an observable, indicating its depth in the dependency graph. Updates are propagated through the dependency graph one level at a time, guaranteeing that all observed observables are consistent with respect to the update.
 
 One final basic operation is defined for observables: `dispose`. This allows the destruction of an observable, removing it from the dependency graph.
 
@@ -117,8 +128,8 @@ temp_update(22); // no output
 Given the basic concept of observables, we can define operations to combine them. Using `merge` we can take several observables and combine them into a new observable that will propagate each change to those observables.
 
 ```c
-void display(void **args, void* _) {
-  printf("current value = value: %f\n", *(double*)(args[0]));
+void display(observable_t ob) {
+  printf("current value = value: %f\n", *(double*)(ob->observed[0]));
 }
 
 int main(void) {
@@ -142,12 +153,12 @@ int main(void) {
 A second operation is `map`. This takes an observable and a function and applies the function to every observed update. A typical example usage is (type) conversion.
 
 ```c
-void double2string(void **number, void *string) {
-  snprintf(((char*)string), 10, "%0.f", *(double*)(number[0]));
+void double2string(observation_t ob) {
+  snprintf(((char*)ob->observer), 10, "%0.f", *(double*)(ob-observed[0]));
 }
 
-void display(void **args, void *_) {
-  printf("current value = value: %s.\n", (char*)(args[0]));
+void display(observation_t ob) {
+  printf("current value = value: %s.\n", (char*)(ob->observed[0]));
 }
 
 int main(void) {
@@ -169,11 +180,11 @@ Notice that `map(a, double2string, char, 10);` is _merely_ a wrapper around the 
 
 Another important aspect of RP is the ability to apply functions to observables. Ideally this should be transparent, but here we also are bound to the static typing of C and need to introduce **compromise #3**: explicit **lifting**.
 
-Lifting takes a function and allows it to function on observables. Let's first look at how we can do this manually: We can't overload operators in C, but we can adhere to functions to perform these operations. Let's take `+` as an example and implement `add`. As we can't have the same function to deal with `int` and `double`, we also need separate functions for each of them, let's call them `addi` and `addd`. Implementing `addi` using the Reactive C so far allows us to define a _lifted_ function as such:
+Lifting takes a function and allows it to function on observables. Let's first look at how we can do this manually: We can't overload operators in C, but we can fall back on functions to perform these operations. Let's take `+` as an example and implement `add`. As we can't have the same function to deal with `int` and `double`, we also need separate functions for each of them, let's call them `addi` and `addd`. Implementing `addi` using Reactive C so far allows us to define a _lifted_ function as such:
 
 ```c
-void _addi(void **args, void *out) {
-  (*(int*)out) = (*(int*)(args[0])) + (*(int*)(args[1]));
+void _addi(observation_t ob) {
+  (*(int*)ob->observer) = (*(int*)(ob->observed[0])) + (*(int*)(ob->observed[1]));
 }
 
 observable_t addi(observable_t a, observable_t b) {
@@ -227,8 +238,8 @@ int main(void) {
 Macro `lift2` will in fact expand in this case to:
 
 ```c
-void __lifted_add(void **in, void *out) {
-   *(int*)(out) = add((*(int*)(in[0])), (*(int*)(in[1])));
+void __lifted_add(observation_t ob) {
+   *(int*)(ob->observer) = add((*(int*)(ob->observed[0])), (*(int*)(ob-served[1])));
 }
 ```
 
@@ -265,11 +276,28 @@ int main(void) {
 }
 ```
 
-A script consists of **fragments**, with each fragment being a statement from the DSL. A script must be `run`, before it actually executes the defined statements.
+A script consists of **suspended observables**, representing a statement from the DSL. A script must be `run`, before it actually executes the defined statements, by activating the observables.
 
-The first example of such a fragment is `await`, which takes an observable and _pauses_ the script until it observes a change to the observable.
+The first example of such a observable is `await`, which takes another observable and _pauses_ the script until it observes a change to the observable. Once `await` has observed a change, the observer is disposed and the next observable is activated.
 
-Behind the scenes, the script takes this `await` fragment and implements it using an observable. Once the observing fragment has observed a change, the observer is disposed and the next fragment is activated.
+`await` takes a single observable, so if we want to wait for activity from more than one observable, we need to combine them. We already encountered `merge`, which could be used since it observes several observables and outputs the observed changes in all of them. As soon as one observable is updated, this would be propagated to `await`, causing it to continue the script.
+
+But for this situation, the DSL also provides `any` and `all`, which propagate when one or all of the observables is updated.
+
+```c
+  script(
+    await(a),
+    await(b),
+    await(delayed(all(a, b, c))),
+    await(delayed(any(b, c))),
+    await(        all(a, b, c))
+  );
+```
+
+Here we need to be careful and notice the subtlety of suspended and non-suspended observables. Let's take `await(a)` first: `a` is an observable, defined outside the scope of the script. It's active and updates its value, before, during and after that `await(a)` is active. In very much the same way, `await(all(a,b,c))` must operate. When constructing the script, this will create an observable `all(a,b,c)`, which is activated at creation time. The surrounding `await` observable is initially suspended. When updates happen to `a`, `b` or `c` `all(a,b,c)` will update and track the updates until all three observables have been updated. If this happens before `await(all(a,b,c))` is activated, it may very well nog work as intended.
+
+If we want to wait for `a`, `b` and `c`, starting at the point where `await(all(a,b,c))` is activated, we need to configure `all(a,b,c)` as such, using the `delayed` decorator. This causes `all(a,b,c)` to be marked **delayed**, therefore not processing updates until its parent (`await`) is activated.
+
+In the script above the fifth statement (`await(all(a,b,c))`), will never introduce additional delay, because before it is activated, the awaited observable has already been updated, causing the surrounding `await` observable to dispose itself.
 
 _To be continued..._
-

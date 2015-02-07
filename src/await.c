@@ -12,55 +12,71 @@ void add_step_counter(observable_t observable) {
 }
 
 int main(void) {
-  int _a = 0, _b = 0;
+  int _a = 0, _b = 0, _c = 0;
   
   observable_t a = observe(_a);
   observable_t b = observe(_b);
-  
+  observable_t c = observe(_c);
+
   run(
     on_activation(
       script(
         await(a),
         await(b),
-        await(a)
+        await(delayed(all(a, b, c))),
+        await(delayed(any(b, c))),
+        await(        all(a, b, c))
       ),
       add_step_counter
     )
   );
 
+  // await(a)
   assert_zero(steps, "Expected no steps, observed %d.\n", steps);
 
   _b = 1; observe_update(b);  // does nothing
-
   assert_zero(steps, "Expected no steps, observed %d.\n", steps);
 
   _a = 1; observe_update(a);  // finalizes await(a)
-
   assert_equal(steps, 1, "Expected 1 step, observed %d.\n", steps);
 
+  // await(b)
   _a = 2; observe_update(a);  // does nothing
-
   assert_equal(steps, 1, "Expected 1 step, observed %d.\n", steps);
 
   _b = 2; observe_update(b);  // finalizes await(b)
-
   assert_equal(steps, 2, "Expected 2 steps, observed %d.\n", steps);
 
+  // await(delayed(all(a,b,c)))
   _b = 3; observe_update(b);  // does nothing
-
   assert_equal(steps, 2, "Expected 2 steps, observed %d.\n", steps);
 
-  _a = 3; observe_update(a);  // finalizes await(a)
+  _a = 3; observe_update(a);  // does nothing
+  assert_equal(steps, 2, "Expected 2 steps, observed %d.\n", steps);
 
-  assert_equal(steps, 3, "Expected 3 steps, observed %d.\n", steps);
+  _c = 3; observe_update(c);  // finalizes await(delayed(all(a,b,c)))
+                              // but also the already started await(all(a,b,c))
+  assert_equal(steps, 4, "Expected 4 steps, observed %d.\n", steps);
 
+  // await(delayed(any(b,c)))
   _a = 4; observe_update(a);  // does nothing
-
-  assert_equal(steps, 3, "Expected 3 steps, observed %d.\n", steps);
+  assert_equal(steps, 4, "Expected 4 steps, observed %d.\n", steps);
 
   _b = 4; observe_update(b);  // does nothing
+  assert_equal(steps, 4, "Expected 4 steps, observed %d.\n", steps);
 
-  assert_equal(steps, 3, "Expected 3 steps, observed %d.\n", steps);
+  _c = 4; observe_update(c);  // finalizes await(delayed(any(b,c)))
+  assert_equal(steps, 5, "Expected 5 steps, observed %d.\n", steps);
+
+  // script done, nothing triggered anymore
+  _a = 5; observe_update(a);  // does nothing
+  assert_equal(steps, 5, "Expected 5 steps, observed %d.\n", steps);
+
+  _b = 5; observe_update(b);  // does nothing
+  assert_equal(steps, 5, "Expected 5 steps, observed %d.\n", steps);
+
+  _c = 5; observe_update(c);  // does nothing
+  assert_equal(steps, 5, "Expected 5 steps, observed %d.\n", steps);
 
   exit(EXIT_SUCCESS);
 }

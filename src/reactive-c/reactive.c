@@ -1,18 +1,29 @@
 // reactive c
 
-#include <stdio.h>
-
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <assert.h>
 
 #include "reactive.h"
+
+#include "iterator.h"
+
+// observation internal extension
+// alternative:
+// 2. a pointer to a participants structure, containing pointers to the emitter
+//    and receiver (internal use only)
+typedef struct participants {
+  observable_t source;
+  observable_t target;
+} *participants_t;
 
 // linked list item (LI) for observables. "next" can't be added to observable
 // because each observable can be grouped with other observers or observed
 // observables.
 typedef struct observable_li {
   observable_t         ob;
+  int prop;
   struct observable_li *next;
 } *observable_li_t;
 
@@ -22,6 +33,8 @@ struct observables {
   observable_li_t first;
   observable_li_t last;
 } observables;
+
+construct_iterator(observable);
 
 // constructor and accessors for an observables list
 observables_t _new_observables_list(void) {
@@ -80,16 +93,32 @@ void _clear_observables(observables_t list) {
   list->last  = NULL;
 }
 
+bool _no_more_observables(observables_t list) {
+  return list->first == NULL;
+}
+
+int _count_observables(observables_t list) {
+  int count = 0;
+  foreach(observable, list) {
+    count++;
+  }
+  return count;
+}
+
 // observables can have several properties, which influences the internal
 // workings.
 enum properties {
-  UNKNOWN     = 0,
-  VALUE       = 1,
-  OBSERVER    = 3,
-  OUT_IS_SELF = 4, // don't provide value but the entire observable as out param
-  DISPOSED    = 8  // used to mark an observable as ready to be removed
+  UNKNOWN     =  0,
+  VALUE       =  1,
+  OBSERVER    =  3, // 3 is correct, OBSERVER = OBSERVER + VALUE ;-)
+  OUT_IS_PART =  4, // don't provide value but participants (internal use)
+  DISPOSED    =  8, // used to mark an observable as ready to be removed
+  SUSPENDED   = 16,
+  DELAYED     = 32,
+  STOP_PROP   = 64
 };
 
+// structure of observable is private
 typedef struct observable {
   int            prop;           // internal properties
   void           *value;         // cached or pointer to observed value <---+
@@ -98,8 +127,8 @@ typedef struct observable {
   void           **args;         // array of pointers to values of observeds
   int            level;          // the level in the dependecy graph
   observables_t  observers;      // first of observers
-  observable_t   parent;         // helper field for storing creating parent
-  // scripting support (old fragments)
+  // scripting support
+  observable_t   parent;
   observable_t   next;           // if this observable is done, start the next
   // events
   observable_callback_t  on_dispose;
@@ -142,25 +171,21 @@ observable_t _update_level(observable_t this) {
 // all value pointers of our own observed observables in an array.
 observable_t _update_args(observable_t this) {
   // compute number of observed observables
-  observable_li_t observed = this->observeds->first;
   int count = 0;
-  while(observed) {
+  foreach(observable, this->observeds) {
     count++;
-    observed = observed->next;
   }
   // optionally free existing list
   if(this->args != NULL) { free(this->args); }
   
   // allocate memory to hold cached list of pointers to observed values
-  this->args = malloc(sizeof(void*)*count);
+  this->args = malloc(sizeof(unknown_t)*count);
   
   // copy pointers to values
-  observed = this->observeds->first;
   count = 0;
-  while(observed) {
-    this->args[count] = observed->ob->value;
+  foreach(observable, this->observeds) {
+    this->args[count] = iter->current->ob->value;
     count++;
-    observed = observed->next;
   }
 
   return this;
@@ -184,6 +209,12 @@ observable_t _clear_observeds(observable_t this) {
   }
   _clear_observables(this->observeds);
   return this;
+}
+
+// utility function to break one link between observer and observed
+void _stop_observing(observable_t this, observable_t observed) {
+  _remove_observable(this->observeds, observed);
+  _remove_observable(observed->observers, this);
 }
 
 // actually free the entire observable structure
@@ -221,27 +252,81 @@ observable_t _gc(observable_t this) {
   return this;
 }
 
+// update observers' arguments - probably because this' value changed location
+void _update_observers_args(observable_t this) {
+  foreach(observable, this->observers) {
+    _update_args(iter->current->ob);
+  }
+}
+
+// forward declaration. TODO: fix this bad order
+void _observe_update(observable_t this, observable_t source);
+
 // internal observer function to merge value updates to multiple observables
 // into one "merged" observable observer.
-void _merging_handler(void **args, void* this) {
-  observable_t merged = ((observable_t)this)->parent;
-  merged->value = args[0];
+void _merge_handler(observation_t ob) {
+  observable_t this = ((participants_t)ob->observer)->target;
+  if(this->prop & SUSPENDED) { return; }
+  if(this->prop & DELAYED)   { return; }
+
+  // redirect value to the value of the emitting merged observable
+  this->value = ((participants_t)ob->observer)->source->value;
 
   // cached args are out of date, because we're modifying the pointer itself
   // force refresh cache on all observers of merged_ob
-  observable_li_t iter = merged->observers->first;
-  while(iter) {
-    _update_args(iter->ob);
-    iter = iter->next;
-  }
+  _update_observers_args(this);
 
-  observe_update(merged);
+  // in _observe_update, after the call to this handler, the observers are
+  // triggered, who now will get updated args
+}
+
+void _all_handler(observation_t ob) {
+  observable_t this = (observable_t)((participants_t)ob->observer)->target;
+  if(this->prop & SUSPENDED) { return; }
+  if(this->prop & DELAYED)   { return; }
+
+  observable_t observed = (observable_t)((participants_t)ob->observer)->source;
+
+  // track item by removing it from our observeds list, we're no longer 
+  // interested in updates
+  //_stop_observing(this, observed);
+  int count=0;
+  int stopped=0;
+  foreach(observable, this->observeds) {
+    if(iter->current->ob == observed) {
+      iter->current->prop = 1; // TEMP for testing
+    }
+    count++;
+    if(iter->current->prop) { stopped++; }
+  }
+    
+  // have we seen all items?
+  // if(_no_more_observables(this->observeds)) {
+  if(count == stopped) {
+    this->prop &= ~(STOP_PROP); // allow propagation to take place
+    dispose(this);
+  }
+}
+
+void _any_handler(observation_t ob) {
+  observable_t this = (observable_t)((participants_t)ob->observer)->target;
+  if(this->prop & SUSPENDED) { return; }
+  if(this->prop & DELAYED)   { return; }
+
+  observable_t observed = (observable_t)((participants_t)ob->observer)->source;
+  
+  // any hit is ok, so simply notify our observers of an update (of no value)
+  _stop_observing(this, observed);
+  dispose(this);
 }
 
 observable_t _step(observable_t script) {
   observable_t step = script->next;
   if(step == NULL) { return NULL; } // end of script
-
+  
+  // link new step to script
+  step->parent = script->parent ? script->parent : script;
+  
   // prepare for next step
   script->next = step->next;
 
@@ -257,12 +342,18 @@ observable_t _step(observable_t script) {
   return step;
 }
 
-void _finalize_await(void **args, void *this) {
+void _finalize_await(observation_t ob) {
+  observable_t this = (observable_t)((participants_t)ob->observer)->target;
+
+  if(this->prop & SUSPENDED) { return; }
+
   // dispose ourselves
-  dispose((observable_t)this);
+  dispose(this);
 
   // tell the script to move to the next step
-  _step(((observable_t)this)->parent);
+  // TODO: could this be done with an on_dispose handler ? (once multiple?) :-)
+  //       this might solve the parent relation ship ;-)
+  _step(this->parent);
 }
 
 // turns a variadic list of observables into an linked list. this is a helper
@@ -287,41 +378,61 @@ observables_t __each(int count, ...) {
 // which is managed externally. when this value is updated, the observer_update
 // function should be called to activate the reactive behaviour associated with
 // it through this observable.
-observable_t __observing_value(void* value) {
+observable_t __observing_value(unknown_t value) {
   observable_t this = _new();
   this->prop        = VALUE;
   this->value       = value;
-  return this;
+  return suspended(this);
 }
 
 // create an observable observer (function), storing the resulting value in a
 // memory location of size.
 observable_t __observing(observables_t observeds, observer_t observer, int size) {
-  // turn the observer into an observable
+  // step 1: turn the observer into an observable
   observable_t this = _new();
   this->prop        = OBSERVER;
-  this->value       = (void*)malloc(size);
+  this->value       = (unknown_t)malloc(size);
   this->process     = observer;
   this->observeds   = observeds;    // this is already partial in the graph
                                     // but cannot be used, no back-links
-  return this;
-}
 
-// public interface
-
-// actually connect the observable in the dependecy graph
-observable_t start(observable_t this) {
-  // step 1: add observeds and update the arguments list and our level in the
-  // dependency graph
+  // step 2: update the arguments list and our level in the dependency graph
   _update_args(this);
   _update_level(this);
 
-  // step 2: add a back-link to the observer to all observeds
+  // step 3: add a back-link to the observer to all observeds
   observable_li_t iter = this->observeds->first;
   while(iter) {
     _add_observable(iter->ob->observers, this);
     iter = iter->next;
   }
+
+  // step 4: by default we're SUSPENDED
+  return suspended(this);
+}
+
+// public interface
+
+// actually activate the observable in the dependecy graph
+observable_t start(observable_t this) {
+  // step 1: acticate ourselves
+  this->prop &= ~SUSPENDED;
+  // step 2: if we have delayed observeds, un-delay them
+  foreach(observable, this->observeds) {
+    iter->current->ob->prop &= ~(DELAYED);
+  }
+  
+  return this;
+}
+
+// undo start ;-)
+observable_t suspend(observable_t this) {
+  this->prop |= SUSPENDED;
+  return this;
+}
+
+observable_t delay(observable_t this) {
+  this->prop |= DELAYED;
   return this;
 }
 
@@ -340,78 +451,100 @@ observable_t on_activation(observable_t this, observable_callback_t callback) {
 // marks an observable for disposing, which is honored when an update-push is
 // executed on it.
 void dispose(observable_t this) {
-  if(this->on_dispose) { this->on_dispose(this); }
+  if(this->on_dispose) { 
+    this->on_dispose(this);
+  }
   this->prop |= DISPOSED;
 }
 
 // trigger for (external) update of observable
-void observe_update(observable_t this) {
+void _observe_update(observable_t this, observable_t source) {
   // if we're marked for disposal (externally), we don't perform any processing
   // one of our observed parents will garbage collect us (sometime)
+  // TODO: only true for observables that observe and can be updated
   if(this->prop & DISPOSED) { return; }
+  
+  // if we're suspended, we ignore this update
+  if(this->prop & SUSPENDED) { return; }
 
-  // if we have a process execute it
-  if(this->process != NULL) {
+  // if we have a process execute it (IF WE'RE NOT OUR OWN SOURCE)
+  if(this->process != NULL && this != source) {
     // do we pass the value or the object itself?
-    if(this->prop & OUT_IS_SELF) {
-      this->process(this->args, this);
+    struct observation ob = { .observeds = this->args };
+    if(this->prop & OUT_IS_PART) {
+      struct participants participants = {.source = source, .target=this};
+      ob.observer = (void*)&participants;
     } else {
-      this->process(this->args, this->value);
+      ob.observer = (void*)this->value;
     }
+    this->process(&ob);
   }
 
   // the logic in the process might have marked us for disposal, still we allow
   // the event flow to continue down to our observers one more time.
 
-  // notify all our observers to do the same, but only those that are directly
-  // dependant on us, so with level = our level + 1. those with even higher
-  // levels are dependant on other levels below us and will be triggered as
-  // soon as their parents all have been updated
-  observable_li_t observer = this->observers->first;
-  if(observer == NULL) {
-    assert(this->observers->last == NULL);
-  }
-  while(observer) {
-    if(observer->ob->level == this->level + 1) {
-      observe_update(observer->ob);
+  // unless we don't want to propagate an update...
+  if(!(this->prop & STOP_PROP)) {
+    // notify all our observers to do the same, but only those that are directly
+    // dependant on us, so with level = our level + 1. those with even higher
+    // levels are dependant on other levels below us and will be triggered as
+    // soon as their parents all have been updated
+    int i=0;
+    foreach(observable, this->observers) {
+      if(!iter->current->prop) {
+        if(iter->current->ob->level == this->level + 1) {
+          _observe_update(iter->current->ob, this);
+        }
+      }
     }
-    observer = observer->next;
   }
 
   // perform garbage collection (on our observers)
   _gc(this);
 }
 
+// public method can only trigger update, not be a source
+void observe_update(observable_t observable) {
+  _observe_update(observable, NULL);
+}
+
 // extract current value from this observable
-void *observable_value(observable_t observable) {
+unknown_t observable_value(observable_t observable) {
   return observable->value;
 }
 
-// merging support
+// generic constructor for observables that observe a set of observables
+observable_t __combine(observables_t obs, observer_t handler) {
+  observable_t combination = observe(obs, handler);
+  combination->prop |= OUT_IS_PART;
+  return combination;
+}
 
 // create a single observable observer from a list of observed observables.
-observable_t __merge(observables_t observeds) {
-  observable_t merged = __observing_value(NULL);
-  observable_li_t observed = observeds->first;
-  while(observed) {
-    observable_t tmp = observe(just(observed->ob), _merging_handler);
-    tmp->prop |= OUT_IS_SELF;
-    tmp->parent = merged;
-    observed = observed->next;
-  }
-  return merged;
+observable_t __merge(observables_t obs) {
+  return __combine(obs, _merge_handler);
+}  
+
+observable_t __all(observables_t obs) {
+  observable_t observer = __combine(obs, _all_handler);
+  observer->prop |= STOP_PROP;
+  return observer;
+}
+
+observable_t __any(observables_t obs) {
+  return __combine(obs, _any_handler);
 }
 
 // scripting support
 
 // constructor for observer that wait until another observer emits
-observable_t await(observable_t observer) {
-  observable_t this = __observing(just(observer), _finalize_await, 0);
-  this->prop        = OUT_IS_SELF;
+observable_t await(observable_t observable) {
+  observable_t this = __observing(just(observable), _finalize_await, 0);
+  this->prop       |= OUT_IS_PART;
   return this;
 }
 
-// constructor for a script, consisting of count inactive observables
+// constructor for a script, consisting of <count> inactive observables
 observable_t __script(int count, ...) {
   if(count<1) { return NULL; }
   

@@ -14,8 +14,9 @@ int add(int a, int b) {
 lift2(int, add);
 
 // expands to...
-// void lifted_add(void **in, void *out) {
-//   *(int*)(out) = add((*(int*)(in[0])), (*(int*)(in[1])));
+// void lifted_add(observation_t ob) {
+//   *(int*)(ob->observer) =
+//     add((*(int*)(ob->observeds[0])), (*(int*)(ob->observeds[1])));
 // }
 
 int main(void) {

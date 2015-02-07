@@ -7,13 +7,13 @@
 
 #include "reactive-c/reactive.h"
 
-void display(void **args, void *_) {
-  capture_printf("current value = value: %s.\n", (char*)(args[0]));
+void display(observation_t ob) {
+  capture_printf("current value = value: %s.\n", (char*)(ob->observeds[0]));
 }
 
 // converts double to string representation
-void double2string(void **number, void *string) {
-  snprintf(((char*)string), 10, "%0.f", *(double*)(number[0]));
+void double2string(observation_t ob) {
+  snprintf(((char*)ob->observer), 10, "%0.f", *(double*)(ob->observeds[0]));
 }
 
 int main(void) {

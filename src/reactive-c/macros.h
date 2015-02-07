@@ -26,6 +26,8 @@
 
 // function call with extended varargs
 #define merge(...) __merge(each(__VA_ARGS__))
+#define all(...)   __all(each(__VA_ARGS__))
+#define any(...)   __any(each(__VA_ARGS__))
 
 // overloaded function and extended varargs
 #define __m3(o,f,t)   observe(just(o),f,t)
@@ -35,10 +37,16 @@
 
 // demo for lifting through macro-expansion
 #define lift2(type, fun) \
-  void __lifted_##fun(void **in, void *out) { \
-    *(type*)(out) = fun((*(type*)(in[0])), (*(type*)(in[1]))); \
+  void __lifted_##fun(observation_t ob) { \
+    *(type*)(ob->observer) = fun((*(type*)(ob->observeds[0])), (*(type*)(ob->observeds[1]))); \
   }
 #define lifted(x) __lifted_##x
 
 // constructor with extended varargs
 #define script(...) __script(_NARG(__VA_ARGS__), __VA_ARGS__)
+
+// sometimes its nicer to write... e.g. return suspended(this)
+#define suspended(x) suspend(x)
+#define started(x)   start(x)
+#define delayed(x)   delay(x)
+
