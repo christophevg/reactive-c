@@ -14,10 +14,10 @@
 #define both(x, y) __each(2, x, y)
 
 // overloaded constructor for creating observables
-#define __o1(v)       __observing_value((void*)&v)
-#define __o2(l,o)     __observing(l,o,0)
-#define __o3(l,o,t)   __observing(l,o,sizeof(t))
-#define __o4(l,o,t,s) __observing(l,o,sizeof(t)*s)
+#define __o1(v)       __observing_value(#v,(void*)&v)
+#define __o2(l,o)     __observing(#l,l,o,0)
+#define __o3(l,o,t)   __observing(#l,l,o,sizeof(t))
+#define __o4(l,o,t,s) __observing(#l,l,o,sizeof(t)*s)
 #define __ox(_1,_2,_3,_4,NAME,...) NAME
 #define observing(...) __ox(__VA_ARGS__, __o4, __o3, __o2, __o1)(__VA_ARGS__)
 
@@ -25,9 +25,9 @@
 #define observe(...) start(observing(__VA_ARGS__))
 
 // function call with extended varargs
-#define merge(...) __merge(each(__VA_ARGS__))
-#define all(...)   __all(each(__VA_ARGS__))
-#define any(...)   __any(each(__VA_ARGS__))
+#define merge(...) __merge("merge(" #__VA_ARGS__ ")", each(__VA_ARGS__))
+#define all(...)   __all("all(" #__VA_ARGS__ ")", each(__VA_ARGS__))
+#define any(...)   __any("any(" #__VA_ARGS__ ")", each(__VA_ARGS__))
 
 // overloaded function and extended varargs
 #define __m3(o,f,t)   observe(just(o),f,t)
@@ -50,3 +50,8 @@
 #define started(x)   start(x)
 #define delayed(x)   delay(x)
 
+// output support
+#define __d1(x)    __to_dot(x, stdout, true)
+#define __d2(x, f) __to_dot(x, f, true)
+#define __dx(_1,_2,NAME,...) NAME
+#define to_dot(...) __dx(__VA_ARGS__, __d2, __d1)(__VA_ARGS__)

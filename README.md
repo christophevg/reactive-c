@@ -300,4 +300,16 @@ If we want to wait for `a`, `b` and `c`, starting at the point where `await(all(
 
 In the script above the fifth statement (`await(all(a,b,c))`), will never introduce additional delay, because before it is activated, the awaited observable has already been updated, causing the surrounding `await` observable to dispose itself.
 
+### Intermezzo: Visualizing Dependency Graphs (dot.c)
+
+At this point, it becomes apparant that as soon as these dependency graphs grow beyond a few observables, it can be helpful to have a visual overview of tall these dependencies.
+
+Using `to_dot(observable_t)` function one can generate a dot-language representation of the dependency graph, starting at the provided observable. The function tries to trace every possible other observable that is connected to the initially provided observable. The following example started from `a`:
+
+<img src="images/await.pdf" width="650" align="center">
+
+Observables with a grey background are **suspended** or **delayed**. Full arrows indicate which observable observes what other observable. Dashed arrows represent the sequential order in which (suspended) observables become active (e.g. in a script). Observed values have a green background.
+
+By default the output is sent to **stdout**, but the function also accepts a second argument, a **file pointer**.
+
 _To be continued..._

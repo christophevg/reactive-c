@@ -1,6 +1,7 @@
 // reactive c
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <assert.h>
@@ -110,16 +111,18 @@ int _count_observables(observables_t list) {
 enum properties {
   UNKNOWN     =  0,
   VALUE       =  1,
-  OBSERVER    =  3, // 3 is correct, OBSERVER = OBSERVER + VALUE ;-)
+  OBSERVER    =  2,
   OUT_IS_PART =  4, // don't provide value but participants (internal use)
   DISPOSED    =  8, // used to mark an observable as ready to be removed
   SUSPENDED   = 16,
   DELAYED     = 32,
-  STOP_PROP   = 64
+  STOP_PROP   = 64,
+  EXPORTED    = 128,
 };
 
 // structure of observable is private
 typedef struct observable {
+  char           *label;
   int            prop;           // internal properties
   void           *value;         // cached or pointer to observed value <---+
   observer_t     process;        // function that given input produces _____|
@@ -138,8 +141,9 @@ typedef struct observable {
 // private functionality
 
 // constructor for empty observable
-observable_t _new() {
+observable_t _new(char *label) {
   observable_t this   = malloc(sizeof(struct observable));
+  this->label         = label;
   this->prop          = UNKNOWN;
   this->value         = NULL;
   this->process       = NULL;
@@ -294,10 +298,10 @@ void _all_handler(observation_t ob) {
   int stopped=0;
   foreach(observable, this->observeds) {
     if(iter->current->ob == observed) {
-      iter->current->prop = 1; // TEMP for testing
+      iter->current->prop |= DISPOSED;
     }
     count++;
-    if(iter->current->prop) { stopped++; }
+    if(iter->current->prop & DISPOSED) { stopped++; }
   }
     
   // have we seen all items?
@@ -378,8 +382,8 @@ observables_t __each(int count, ...) {
 // which is managed externally. when this value is updated, the observer_update
 // function should be called to activate the reactive behaviour associated with
 // it through this observable.
-observable_t __observing_value(unknown_t value) {
-  observable_t this = _new();
+observable_t __observing_value(char *label, unknown_t value) {
+  observable_t this = _new(label);
   this->prop        = VALUE;
   this->value       = value;
   return suspended(this);
@@ -387,9 +391,9 @@ observable_t __observing_value(unknown_t value) {
 
 // create an observable observer (function), storing the resulting value in a
 // memory location of size.
-observable_t __observing(observables_t observeds, observer_t observer, int size) {
+observable_t __observing(char *label, observables_t observeds, observer_t observer, int size) {
   // step 1: turn the observer into an observable
-  observable_t this = _new();
+  observable_t this = _new(label);
   this->prop        = OBSERVER;
   this->value       = (unknown_t)malloc(size);
   this->process     = observer;
@@ -491,7 +495,7 @@ void _observe_update(observable_t this, observable_t source) {
     // soon as their parents all have been updated
     int i=0;
     foreach(observable, this->observers) {
-      if(!iter->current->prop) {
+      if( ! (iter->current->prop & DISPOSED) ) {
         if(iter->current->ob->level == this->level + 1) {
           _observe_update(iter->current->ob, this);
         }
@@ -514,32 +518,32 @@ unknown_t observable_value(observable_t observable) {
 }
 
 // generic constructor for observables that observe a set of observables
-observable_t __combine(observables_t obs, observer_t handler) {
-  observable_t combination = observe(obs, handler);
+observable_t __combine(char *label, observables_t obs, observer_t handler) {
+  observable_t combination = start(__observing(label, obs, handler, 0));
   combination->prop |= OUT_IS_PART;
   return combination;
 }
 
 // create a single observable observer from a list of observed observables.
-observable_t __merge(observables_t obs) {
-  return __combine(obs, _merge_handler);
+observable_t __merge(char *label, observables_t obs) {
+  return __combine(label, obs, _merge_handler);
 }  
 
-observable_t __all(observables_t obs) {
-  observable_t observer = __combine(obs, _all_handler);
+observable_t __all(char *label, observables_t obs) {
+  observable_t observer = __combine(label, obs, _all_handler);
   observer->prop |= STOP_PROP;
   return observer;
 }
 
-observable_t __any(observables_t obs) {
-  return __combine(obs, _any_handler);
+observable_t __any(char *label, observables_t obs) {
+  return __combine(label, obs, _any_handler);
 }
 
 // scripting support
 
 // constructor for observer that wait until another observer emits
 observable_t await(observable_t observable) {
-  observable_t this = __observing(just(observable), _finalize_await, 0);
+  observable_t this = __observing("await", just(observable), _finalize_await, 0);
   this->prop       |= OUT_IS_PART;
   return this;
 }
@@ -548,7 +552,7 @@ observable_t await(observable_t observable) {
 observable_t __script(int count, ...) {
   if(count<1) { return NULL; }
   
-  observable_t script = _new();
+  observable_t script = _new("script");
    
   va_list ap;
   va_start(ap, count);
@@ -571,4 +575,64 @@ observable_t __script(int count, ...) {
 
 observable_t run(observable_t script) {
   return _step(script);  // activates the first step in a consistent way
+}
+
+// output support
+
+void __to_dot(observable_t this, FILE *fp, bool preamble) {
+  if(this->prop & EXPORTED) { return; }
+  this->prop |= EXPORTED;
+
+  if(preamble) {
+    fprintf(fp,
+      "digraph {\n"
+      "  ordering=out;\n"
+      "  ranksep=.4;\n"
+      "  rankdir = BT;\n"
+      "  node [shape=plaintext, fixedsize=true, fontsize=11, "
+      "  fontname=\"Courier\", width=.25, height=.25];\n"
+      "  edge [arrowsize=.6]\n"
+    );
+  }
+
+  // self node
+  fprintf(fp, "\"%p\" [label=\"%s\"", this, this->label);
+  // delayed/suspended observables are grey
+  if(this->prop & DELAYED || this->prop & SUSPENDED) {
+    fprintf(fp, " color=\"grey\", style=\"filled\"");
+  }
+  // values are green
+  if(this->prop & VALUE) {
+    fprintf(fp, " color=\"green\", style=\"filled\"");
+  }
+  fprintf(fp, "]\n");
+
+  // observeds
+  foreach(observable, this->observeds) {
+    // only generate links for observed ... not also for observers
+    if(!(iter->current->prop & EXPORTED)) {
+      iter->current->prop |= EXPORTED;
+      fprintf(fp, "\"%p\" -> \"%p\"\n", this, iter->current->ob);
+    }
+    // recurse
+    __to_dot(iter->current->ob, fp, false);
+  }
+
+  // sequential relationships (e.g. scripts' steps)
+  if(this->next) {
+    fprintf(fp, "\"%p\" -> \"%p\" [style=\"dotted\"]\n", this, this->next);
+    fprintf(fp, "{ rank = same; \"%p\" \"%p\" }", this, this->next);
+  }
+
+  // recurse observers
+  foreach(observable, this->observers) {
+    __to_dot(iter->current->ob, fp, false);
+  }
+
+  // recurse parent
+  if(this->parent) {
+    __to_dot(this->parent, fp, false);
+  }
+
+  if(preamble) { fprintf(fp, "}\n"); }
 }

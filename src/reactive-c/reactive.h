@@ -1,6 +1,9 @@
 #ifndef __REACTIVE_H
 #define __REACTIVE_H
 
+#include <stdio.h>
+#include <stdbool.h>
+
 #include "macros.h"
 
 // let's give the unknown types a name
@@ -35,10 +38,10 @@ observables_t __each(int,...);
 
 // adds observer to a list of observables, providing memory space for its value,
 // based on its size
-observable_t __observing(observables_t, observer_t, int);
+observable_t __observing(char*, observables_t, observer_t, int);
 
 // construct an observable from a (pointer to a) value
-observable_t __observing_value(unknown_t);
+observable_t __observing_value(char*, unknown_t);
 
 // actually starts an observable
 observable_t start(observable_t);
@@ -61,13 +64,13 @@ void dispose(observable_t);
 void observe_update(observable_t observable);
 
 // generic constructor for combined observables
-observable_t __merge(observables_t);
+observable_t __merge(char*, observables_t);
 
 // ... emits true when all observables have emitted at least once
-observable_t __all(observables_t);
+observable_t __all(char*, observables_t);
 
 // ... emits true when at least one observable has emitted at least once
-observable_t __any(observables_t);
+observable_t __any(char*, observables_t);
 
 // support for scripting
 
@@ -79,5 +82,9 @@ observable_t run(observable_t);
 
 // morphing constructor to wait until an observable emits an update
 observable_t await(observable_t);
+
+// output support
+// dump the given observable (recursively) in dot format
+void __to_dot(observable_t, FILE*, bool);
 
 #endif
