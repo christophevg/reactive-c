@@ -21,7 +21,7 @@ run: build
 
 images/await.png: bin/await.dot
 	@${MKDIR} images
-	@${DOT} -Tpng -Gsize=7,7\! -Gdpi=100 -o $@ $<
+	@${DOT} -Tpng -Gsize=5.5,5.5\! -Gdpi=100 -o $@ $<
 
 ${BUILD_DIR}:
 	@${MKDIR} $@
