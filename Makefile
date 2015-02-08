@@ -8,7 +8,7 @@ RM			  = rm -rf
 
 DOT=dot -Nfixedsize=False -Nfontname=Times-Roman -Nshape=rectangle
 
-all: clean run images/await.pdf
+all: clean run images/await.png
 
 ${BUILD_DIR}/Makefile: ${BUILD_DIR}
 	@(${CD} $<; ${CMAKE} -DCMAKE_BUILD_TYPE=Debug ../${SRC_DIR})
@@ -19,9 +19,9 @@ build: ${BUILD_DIR}/Makefile
 run: build
 	@(${CD} ${BUILD_DIR}; ${MAKE} run)
 
-images/await.pdf: bin/await.dot
+images/await.png: bin/await.dot
 	@${MKDIR} images
-	@${DOT} -Tpdf -o $@ $<
+	@${DOT} -Tpng -Gsize=7,7\! -Gdpi=100 -o $@ $<
 
 ${BUILD_DIR}:
 	@${MKDIR} $@
