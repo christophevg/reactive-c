@@ -539,6 +539,20 @@ observable_t __any(char *label, observables_t obs) {
   return __combine(label, obs, _any_handler);
 }
 
+// fold support
+
+observable_t __fold_int(observable_t ob, observer_t folder, int init) {
+  observable_t folded = observe(just(ob), folder, sizeof(int));
+  *((int*)folded->value) = init;
+  return folded;
+}
+
+observable_t __fold_double(observable_t ob, observer_t folder, double init) {
+  observable_t folded = observe(just(ob), folder, sizeof(double));
+  *((double*)folded->value) = init;
+  return folded;
+}
+
 // scripting support
 
 // constructor for observer that wait until another observer emits

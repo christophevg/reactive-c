@@ -36,6 +36,10 @@ void *observable_value(observable_t);
 // turns a variadic list of observables into a linked list of observables
 observables_t __each(int,...);
 
+// folding support
+observable_t __fold_int(observable_t ob, observer_t folder, int init);
+observable_t __fold_double(observable_t ob, observer_t folder, double init);
+
 // adds observer to a list of observables, providing memory space for its value,
 // based on its size
 observable_t __observing(char*, observables_t, observer_t, int);

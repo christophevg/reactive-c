@@ -1,5 +1,4 @@
 TODO
-- introduce fold()
 - improve garbage collection
 - introduce emit() + fix script
 - change self-disposing any() and all() -> bool value + reset functionality

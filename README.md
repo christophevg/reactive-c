@@ -123,7 +123,7 @@ dispose(displayer);
 temp_update(22); // no output
 ```
 
-### Merging (merging.c, map.c)
+### Merging & co (merging.c, map.c, fold.c)
 
 Given the basic concept of observables, we can define operations to combine them. Using `merge` we can take several observables and combine them into a new observable that will propagate each change to those observables.
 
@@ -175,6 +175,36 @@ int main(void) {
 }
 ```
 Notice that `map(a, double2string, char, 10);` is _merely_ a wrapper around the basic `observe` constructor and is expanded to `observe(just(a), double2string, char, 10);`
+
+Let's take a look at another mapping function:
+
+```c
+void sum(observation_t ob) {
+  *((int*)ob->observer) = *((int*)ob->observer) + *((int*)ob->observeds[0]);  
+}
+```
+
+Up to now, we didn't use the _current_ value of an observable to compute the next value, but what's stopping us? `sum(observation_t)` applied using a `map` is what sometimes is called a `fold` function. In this case, it's yet another macro expansion.
+
+But, normally, when used in this context, an initial value is also applied. Support for this is also implemented:
+
+```c
+void fold_sum(observation_t ob) {
+  *((int*)ob->observer) = *((int*)ob->observer) + *((int*)ob->observeds[0]);  
+}
+
+int main(void) {
+  int _var1;
+  observable_t var1 = observe(_var1);
+
+  observable_t folded = fold(var1, fold_sum, int, 3);
+
+  _var1 = 1;  observe_update(var1);     // folded = 4
+  _var1 = 2;  observe_update(var1);     // folded = 6
+  _var1 = 3;  observe_update(var1);     // folded = 9
+  ...
+}
+```
 
 ### Lifting Functions (add.c, lift.c)
 
