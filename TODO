@@ -1,11 +1,7 @@
 TODO
-- add visitor + graphviz renderer
-- improve garbage collection
-- change self-disposing any() and all() -> bool value + reset functionality
-- introduce emit() + fix script
 - introduce fold()
-- get rid of observables + each()
-  observe(observable1, observable2, observable3, using(observer, type, size))
+- improve garbage collection
+- introduce emit() + fix script
+- change self-disposing any() and all() -> bool value + reset functionality
 
-- introduce generic datatype ? aka variable_t - use union somehow?
 - make execution of observe_update async -> really needed?
