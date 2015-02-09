@@ -1,4 +1,10 @@
 TODO
+- can do_#type() trick be applied to more? (cfr fold)
+- introduce filter
+- implement loop-detection
+- introduce time
+- introduce timeout
+- introduce sample?
 - improve garbage collection
 - introduce emit() + fix script
 - change self-disposing any() and all() -> bool value + reset functionality
