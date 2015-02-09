@@ -33,5 +33,9 @@ int main(void) {
 
   assert_equal(as(int, value1), 457, "Expected 456.789 as int to be 457.\n");
 
+  let(value1, double, 123.123);
+
+  assert_equal(as(int, value1), 123, "Expected 123.123 as int to be 123.\n");
+
   exit(EXIT_SUCCESS);
 }

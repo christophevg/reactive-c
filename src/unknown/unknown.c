@@ -88,3 +88,28 @@ void let(unknown_t rval, unknown_t lval) {
   }
 }
 
+void __let_int(unknown_t rval, int lval) {
+  switch(rval->private->type) {
+    case INTEGER: rval->private->value.i =         lval; break;
+    case DOUBLE:  rval->private->value.d = (double)lval; break;
+    case STRING:
+      sprintf(rval->private->value.s, "%d", lval);
+      break;
+  }
+}
+
+void __let_double(unknown_t rval, double lval) {
+  switch(rval->private->type) {
+    case INTEGER: rval->private->value.i = (int)lval;          break;
+    case DOUBLE:  rval->private->value.d =      lval;          break;
+    case STRING:  sprintf(rval->private->value.s, "%f", lval); break;
+  }
+}
+
+void __let_string(unknown_t rval, char *lval) {
+  switch(rval->private->type) {
+    case INTEGER: rval->private->value.i = atoi(lval); break;
+    case DOUBLE:  rval->private->value.d = atof(lval); break;
+    case STRING:  rval->private->value.s = lval;       break;
+  }
+}
