@@ -26,6 +26,12 @@ int main(void) {
   display(value3);
 
   assert_output_was("123 = 123.123000 = 123.123\n"); clear_output();
-  
+
+  // let support
+
+  let(value1, new(double, 456.789));
+
+  assert_equal(as(int, value1), 457, "Expected 456.789 as int to be 457.\n");
+
   exit(EXIT_SUCCESS);
 }

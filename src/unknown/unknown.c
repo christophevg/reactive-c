@@ -10,6 +10,7 @@ typedef struct internals {
     double d;
     char  *s;
   } value;
+  enum { INTEGER, DOUBLE, STRING } type;
   char *buffer; // used for conversion to string, allows for better freeing
 } internals;
 
@@ -32,7 +33,7 @@ char *d2s(unknown_t data) {
   snprintf(data->private->buffer,15,"%f", data->private->value.d);
   return data->private->buffer;
 }
-int d2i(unknown_t data) { return (int)data->private->value.d; }
+int d2i(unknown_t data) { return (int)(data->private->value.d + 0.5); }
 double d2d(unknown_t data) { return data->private->value.d; }
 
 // string ->
@@ -47,6 +48,7 @@ unknown_t new_int(int value) {
   v->as_int    = i2i;
   v->as_double = i2d;
   v->private = malloc(sizeof(internals));
+  v->private->type = INTEGER;
   v->private->value.i = value;
   v->private->buffer  = NULL;
   return v;
@@ -59,6 +61,7 @@ unknown_t new_double(double value) {
   v->as_int    = d2i;
   v->as_double = d2d;
   v->private = malloc(sizeof(internals));
+  v->private->type = DOUBLE;
   v->private->value.d = value;
   v->private->buffer  = NULL;
   return v;
@@ -71,7 +74,17 @@ unknown_t new_string(char *value) {
   v->as_int    = s2i;
   v->as_double = s2d;
   v->private = malloc(sizeof(internals));
+  v->private->type = STRING;
   v->private->value.s = value;
   v->private->buffer  = NULL;
   return v;
 }
+
+void let(unknown_t rval, unknown_t lval) {
+  switch(rval->private->type) {
+    case INTEGER: rval->private->value.i = as(int,    lval); break;
+    case DOUBLE:  rval->private->value.d = as(double, lval); break;
+    case STRING:  rval->private->value.s = as(string, lval); break;
+  }
+}
+

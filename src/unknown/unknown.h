@@ -21,4 +21,6 @@ unknown_t new_string (char *value);
 #define new(t,v) new_##t(v)
 #define as(t,v) v->as_##t(v)
 
+void let(unknown_t, unknown_t);
+
 #endif
