@@ -15,12 +15,12 @@ struct Unknown {
 } Unknown;
 
 // constructors
-unknown_t new_int    (int value);
-unknown_t new_double (double value);
-unknown_t new_string (char *value);
+unknown_t new_int    (int* value);
+unknown_t new_double (double* value);
+unknown_t new_string (char** value);
 
 // syntactic sugar
-#define new(t,v) new_##t(v)
+#define new(t,v) new_##t(&v)
 #define as(t,v) v->as_##t(v)
 
 void __let(unknown_t, unknown_t);

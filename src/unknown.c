@@ -13,24 +13,28 @@ void display(unknown_t data) {
 }
 
 int main(void) {
-  unknown_t value1 = new(int, 123);
+  int i = 123;
+  unknown_t value1 = new(int, i);
   display(value1);
 
   assert_output_was("123 = 123.000000 = 123\n"); clear_output();
   
-  unknown_t value2 = new(double, 123.123);
+  double d = 123.123;
+  unknown_t value2 = new(double, d);
   display(value2);
 
   assert_output_was("123 = 123.123000 = 123.123000\n"); clear_output();
 
-  unknown_t value3 = new(string, "123.123");
+  char *s = "123.123";
+  unknown_t value3 = new(string, s);
   display(value3);
 
   assert_output_was("123 = 123.123000 = 123.123\n"); clear_output();
 
   // let support
 
-  let(value1, new(double, 456.789));
+  double d2 = 456.789;
+  let(value1, new(double, d2));
 
   assert_equal(as(int, value1), 457, "Expected 456.789 as int to be 457.\n");
 
@@ -42,7 +46,8 @@ int main(void) {
 
   assert_equal(as(int, value1), 987, "Expected 987 as int to be 987 .\n");
 
-  unknown_t str = new(string, "hello world");
+  char *s2 =  "hello world";
+  unknown_t str = new(string, s2);
   val(string, str) = "updated world";
 
   assert_true(strcmp(as(string, str), "updated world") == 0,
