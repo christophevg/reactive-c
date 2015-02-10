@@ -13,7 +13,8 @@ macro(add_executable name)
   add_custom_target(run_${name}
     DEPENDS ${name}
     COMMENT "Running ${name}..."
-    COMMAND "./${name}"
+    COMMAND ${name}
+    WORKING_DIRECTORY ${CMAKE_PROJECT_DIR}
   )
   # and make it a dependency of the generic run target
   add_dependencies(run "run_${name}")
