@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "unknown/unknown.h"
+#include "unknown.h"
 
-#include "unit/test.h"
+#include "../unit/test.h"
 
 void display(unknown_t data) {
   capture_printf("%d = %f = %s\n",

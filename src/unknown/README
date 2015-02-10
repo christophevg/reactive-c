@@ -1,0 +1,5 @@
+This module contains an experiment to implement an unknown type. The goal is to
+be able to wrap existing values and provide semi-dynamic conversions,...
+
+The goal is to replace the typedef (void*) unknown_t from the parent project, to
+remove the remaining casting and abuse of (void*).
