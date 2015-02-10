@@ -332,7 +332,7 @@ In the script above the fifth statement (`await(all(a,b,c))`), will never introd
 
 ### Intermezzo: Visualizing Dependency Graphs (dot.c)
 
-At this point, it becomes apparant that as soon as these dependency graphs grow beyond a few observables, it can be helpful to have a visual overview of tall these dependencies.
+At this point, it becomes apparent that as soon as these dependency graphs grow beyond a few observables, it can be helpful to have a visual overview of tall these dependencies.
 
 Using `to_dot(observable_t)` function one can generate a dot-language representation of the dependency graph, starting at the provided observable. The function tries to trace every possible other observable that is connected to the initially provided observable. The following example started from `a`:
 
@@ -343,5 +343,26 @@ Using `to_dot(observable_t)` function one can generate a dot-language representa
 Observables with a grey background are **suspended** or **delayed**. Full arrows indicate which observable observes what other observable. Dashed arrows represent the sequential order in which (suspended) observables become active (e.g. in a script). Observed values have a green background.
 
 By default the output is sent to **stdout**, but the function also accepts a second argument, a **file pointer**.
+
+### Let's talk bits & bytes (copy.c, set.c)
+
+Observables deal with values in _generic_ way, using the `unknown_t` type, which is basically your catch-all `void*`. But they store some information about the type, more specifically its size. This allows us to implement `observable_value_copy` to copy the value of one observable to another one, without really knowing its exact type.
+
+```c
+  int _a = 3,
+      _b = 0;
+  observable_t a = observe(int, _a);
+  observable_t b = observe(int, _b);
+
+  observable_value_copy(a, b);        // _b == 3 too now
+```
+
+The underlying principle (aka `memcpy`) also allows for the implementation of a `set` function, that updates a variable through an observable, triggering the effects in the dependency graph.
+
+```c
+  int _a = 0;
+  observable_t a = observe(int, _a);
+  set(int, a, 3);                     // _a == 3 now
+```
 
 _To be continued..._
