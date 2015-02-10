@@ -5,6 +5,7 @@
 // 2. overloaded functions, based on number of supplied arguments
 // concepts learned from:
 // - http://stackoverflow.com/questions/11761703/
+// - https://groups.google.com/forum/?fromgroups#!topic/comp.std.c/d-6Mj5Lko_s
 
 #include "varargs.h"
 
