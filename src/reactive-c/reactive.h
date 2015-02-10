@@ -91,4 +91,7 @@ observable_t await(observable_t);
 // dump the given observable (recursively) in dot format
 void __to_dot(observable_t, FILE*, bool);
 
+// copy support
+void observable_value_copy(observable_t, observable_t);
+
 #endif

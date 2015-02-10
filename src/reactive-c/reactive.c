@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <string.h>
 #include <assert.h>
 
 #include "reactive.h"
@@ -652,4 +653,12 @@ void __to_dot(observable_t this, FILE *fp, bool preamble) {
   }
 
   if(preamble) { fprintf(fp, "}\n"); }
+}
+
+// copy support
+void observable_value_copy(observable_t src, observable_t trg) {
+  // we don't know what we're copying, but we know the size ;-)
+  // only copy when internal memory space is the same
+  assert(src->type_size == trg->type_size);
+  memcpy(trg->value, src->value, src->type_size);
 }
