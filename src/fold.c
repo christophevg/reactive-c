@@ -8,7 +8,7 @@
 #include "reactive-c/reactive.h"
 
 void fold_sum(observation_t ob) {
-  *((int*)ob->observer) = *((int*)ob->observer) + *((int*)ob->observeds[0]);  
+  *((int*)ob->observer) += *((int*)ob->observeds[0]);
 }
 
 int main(void) {

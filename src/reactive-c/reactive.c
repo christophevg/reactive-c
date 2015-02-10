@@ -124,10 +124,10 @@ enum properties {
 typedef struct observable {
   char           *label;
   int            prop;           // internal properties
-  void           *value;         // cached or pointer to observed value <---+
+  unknown_t      value;          // cached or pointer to observed value <---+
   observer_t     process;        // function that given input produces _____|
   observables_t  observeds;      // first of observed observables
-  void           **args;         // array of pointers to values of observeds
+  unknown_t      *args;          // array of pointers to values of observeds
   int            level;          // the level in the dependecy graph
   observables_t  observers;      // first of observers
   // scripting support
@@ -262,9 +262,6 @@ void _update_observers_args(observable_t this) {
     _update_args(iter->current->ob);
   }
 }
-
-// forward declaration. TODO: fix this bad order
-void _observe_update(observable_t this, observable_t source);
 
 // internal observer function to merge value updates to multiple observables
 // into one "merged" observable observer.
@@ -477,9 +474,9 @@ void _observe_update(observable_t this, observable_t source) {
     struct observation ob = { .observeds = this->args };
     if(this->prop & OUT_IS_PART) {
       struct participants participants = {.source = source, .target=this};
-      ob.observer = (void*)&participants;
+      ob.observer = (unknown_t)&participants;
     } else {
-      ob.observer = (void*)this->value;
+      ob.observer = (unknown_t)this->value;
     }
     this->process(&ob);
   }

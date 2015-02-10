@@ -27,7 +27,7 @@ typedef struct observation {
 typedef void (*observer_t)(observation_t);
 
 // retrieve the current value of the observable
-void *observable_value(observable_t);
+unknown_t observable_value(observable_t);
 
 // NOTE: functions with a double underscore prefix are the actual functions
 //       offered by the API, BUT, they should not be called directly. Macros.h

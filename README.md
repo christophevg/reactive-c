@@ -180,7 +180,7 @@ Let's take a look at another mapping function:
 
 ```c
 void sum(observation_t ob) {
-  *((int*)ob->observer) = *((int*)ob->observer) + *((int*)ob->observeds[0]);  
+  *((int*)ob->observer) += *((int*)ob->observeds[0]);
 }
 ```
 
@@ -190,7 +190,7 @@ But, normally, when used in this context, an initial value is also applied. Supp
 
 ```c
 void fold_sum(observation_t ob) {
-  *((int*)ob->observer) = *((int*)ob->observer) + *((int*)ob->observeds[0]);  
+  *((int*)ob->observer) += *((int*)ob->observeds[0]);
 }
 
 int main(void) {
