@@ -18,7 +18,7 @@ observable_t observable_temp;
 
 // ... and link it to the value/variable.
 void observable_temp_init() {
-  observable_temp = observe(temp);
+  observable_temp = observe(double, temp);
 }
 
 // when the value/variable is updated, we trigger the RP functionality
@@ -76,7 +76,7 @@ int main(void) {
 
   // let's add an observer that displays the updates from now on using our
   // display observer function
-  observable_t displayer = observe(both(observable_temp, temp_f), display);
+  observable_t displayer = observe(both(observable_temp, temp_f), display, void);
 
   temp_update(19);
   temp_update(20);

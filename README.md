@@ -42,7 +42,7 @@ double temp = 123;
 observable_t observable_temp;
 
 void temp_init() {
-  observable_temp = observe(temp);
+  observable_temp = observe(double, temp);
 }
 
 void temp_update(double update) {
@@ -135,13 +135,13 @@ void display(observable_t ob) {
 int main(void) {
   double _a, _b, _c;
 
-  observable_t a = observe(_a);
-  observable_t b = observe(_b);
-  observable_t c = observe(_c);
+  observable_t a = observe(double, _a);
+  observable_t b = observe(double, _b);
+  observable_t c = observe(double, _c);
 
   observable_t abc = merge(a, b, c);
 
-  observe(just(abc), display);
+  observe(just(abc), display, void);
 
   _a = 1;  observe_update(a);  // output: current value = value: 1.000000.
   _b = 2;  observe_update(b);  // output: current value = value: 2.000000.
@@ -164,9 +164,9 @@ void display(observation_t ob) {
 int main(void) {
   double _a;
   
-  observable_t a = observe(_a);
+  observable_t a = observe(double, _a);
   observable_t A = map(a, double2string, char, 10);
-  observe(just(A), display);
+  observe(just(A), display, void);
 
   _a = 1;  observe_update(a);  // output: current value = value: 1.  
   _a = 2;  observe_update(a);  // output: current value = value: 2.  
@@ -195,7 +195,7 @@ void fold_sum(observation_t ob) {
 
 int main(void) {
   int _var1;
-  observable_t var1 = observe(_var1);
+  observable_t var1 = observe(int, _var1);
 
   observable_t folded = fold(var1, fold_sum, int, 3);
 
@@ -224,8 +224,8 @@ observable_t addi(observable_t a, observable_t b) {
 int main(void) {
   int _var1, _var2;
   
-  observable_t var1 = observe(_var1);
-  observable_t var2 = observe(_var2);
+  observable_t var1 = observe(int, _var1);
+  observable_t var2 = observe(int, _var2);
   
   observable_t var3 = addi(var1, var2);
 
@@ -251,8 +251,8 @@ lift2(int, add);
 int main(void) {
   int _var1, _var2;
   
-  observable_t var1 = observe(_var1);
-  observable_t var2 = observe(_var2);
+  observable_t var1 = observe(int, _var1);
+  observable_t var2 = observe(int, _var2);
   
   observable_t var3 = observe(both(var1, var2), lifted(add), int);
 
@@ -283,8 +283,8 @@ One of the objections made by RP is that of the inherent inversion of control ef
 int main(void) {
   int _a = 0, _b = 0;
   
-  observable_t a = observe(_a);
-  observable_t b = observe(_b);
+  observable_t a = observe(int, _a);
+  observable_t b = observe(int, _b);
   
   run(
     script(

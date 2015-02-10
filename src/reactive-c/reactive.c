@@ -125,6 +125,7 @@ typedef struct observable {
   char           *label;
   int            prop;           // internal properties
   unknown_t      value;          // cached or pointer to observed value <---+
+  int            type_size;      // sizeof(typeof(value))
   observer_t     process;        // function that given input produces _____|
   observables_t  observeds;      // first of observed observables
   unknown_t      *args;          // array of pointers to values of observeds
@@ -146,6 +147,7 @@ observable_t _new(char *label) {
   this->label         = label;
   this->prop          = UNKNOWN;
   this->value         = NULL;
+  this->type_size     = 0;
   this->process       = NULL;
   this->observeds     = _new_observables_list();
   this->args          = NULL;
@@ -379,20 +381,24 @@ observables_t __each(int count, ...) {
 // which is managed externally. when this value is updated, the observer_update
 // function should be called to activate the reactive behaviour associated with
 // it through this observable.
-observable_t __observing_value(char *label, unknown_t value) {
+observable_t __observing_value(char *label, unknown_t value, int size) {
   observable_t this = _new(label);
   this->prop        = VALUE;
   this->value       = value;
+  this->type_size   = size;
   return suspended(this);
 }
 
 // create an observable observer (function), storing the resulting value in a
 // memory location of size.
-observable_t __observing(char *label, observables_t observeds, observer_t observer, int size) {
+observable_t __observing(char *label, observables_t observeds,
+                         observer_t observer, int size)
+{
   // step 1: turn the observer into an observable
   observable_t this = _new(label);
   this->prop        = OBSERVER;
   this->value       = (unknown_t)malloc(size);
+  this->type_size   = size;
   this->process     = observer;
   this->observeds   = observeds;    // this is already partial in the graph
                                     // but cannot be used, no back-links

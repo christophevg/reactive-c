@@ -15,8 +15,7 @@
 #define both(x, y) __each(2, x, y)
 
 // overloaded constructor for creating observables
-#define __o1(v)       __observing_value(#v,(void*)&v)
-#define __o2(l,o)     __observing(#l,l,o,0)
+#define __o2(t,v)     __observing_value(#v,(void*)&v,sizeof(t))
 #define __o3(l,o,t)   __observing(#l,l,o,sizeof(t))
 #define __o4(l,o,t,s) __observing(#l,l,o,sizeof(t)*s)
 #define __ox(_1,_2,_3,_4,NAME,...) NAME
