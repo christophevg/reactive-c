@@ -1,6 +1,8 @@
 #ifndef __UNKNOWN_H
 #define __UNKNOWN_H
 
+#include <stdbool.h>
+
 typedef struct Unknown   *unknown_t;
 typedef struct internals *internals_t;
 
@@ -36,5 +38,11 @@ double *__val_double(unknown_t);
 char **__val_string(unknown_t);
 
 #define val(t,x) *(__val_##t(x))
+
+bool is_int(unknown_t);
+bool is_double(unknown_t);
+bool is_string(unknown_t);
+
+#define is(t,x) is_##t(x)
 
 #endif

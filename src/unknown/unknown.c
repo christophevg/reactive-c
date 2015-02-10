@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #include "unknown.h"
 
@@ -127,4 +128,16 @@ double *__val_double(unknown_t val) {
 char **__val_string(unknown_t val) {
   assert(val->private->type == STRING);
   return &val->private->value.s;
+}
+
+bool is_int(unknown_t val) {
+  return val->private->type == INTEGER;
+}
+
+bool is_double(unknown_t val) {
+  return val->private->type == DOUBLE;
+}
+
+bool is_string(unknown_t val) {
+  return val->private->type == STRING;
 }

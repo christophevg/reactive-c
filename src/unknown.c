@@ -48,5 +48,9 @@ int main(void) {
   assert_true(strcmp(as(string, str), "updated world") == 0,
               "Expected updated string");
 
+  assert_true(is(int, value1), "Expected value1 to be an integer.");
+  assert_false(is(double, value1), "Expected value1 NOT to be a double.");
+  assert_true(is(string, str), "Expected str to be a string.");
+
   exit(EXIT_SUCCESS);
 }
