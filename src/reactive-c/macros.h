@@ -64,3 +64,6 @@
 
 // set support
 #define set(t,o,v) __set_##t(o,v)
+
+// filter support
+#define filter(t,o,v) __filter(sizeof(t),o,v)

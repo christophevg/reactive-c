@@ -40,6 +40,10 @@ observables_t __each(int,...);
 observable_t __fold_int(observable_t ob, observer_t folder, int init);
 observable_t __fold_double(observable_t ob, observer_t folder, double init);
 
+// filter support
+typedef bool(*validator_t)(unknown_t);
+observable_t __filter(int size, observable_t, validator_t);
+
 // adds observer to a list of observables, providing memory space for its value,
 // based on its size
 observable_t __observing(char*, observables_t, observer_t, int);

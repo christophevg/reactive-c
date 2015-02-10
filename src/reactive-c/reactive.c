@@ -132,6 +132,7 @@ typedef struct observable {
   unknown_t      *args;          // array of pointers to values of observeds
   int            level;          // the level in the dependecy graph
   observables_t  observers;      // first of observers
+  validator_t    validate;       // validate if an update is propagated
   // scripting support
   observable_t   parent;
   observable_t   next;           // if this observable is done, start the next
@@ -154,6 +155,7 @@ observable_t _new(char *label) {
   this->args          = NULL;
   this->level         = 0;
   this->observers     = _new_observables_list();
+  this->validate      = NULL;
   this->parent        = NULL;
   this->next          = NULL;
   this->on_dispose    = NULL;
@@ -474,6 +476,16 @@ void _observe_update(observable_t this, observable_t source) {
   
   // if we're suspended, we ignore this update
   if(this->prop & SUSPENDED) { return; }
+  
+  // if we have a filter, check if we want to propagate
+  if(this->validate){
+    if(! this->validate(source->value) ) {
+      this->prop |= STOP_PROP;
+      return;
+    } else {
+      this->prop &= ~STOP_PROP;
+    }
+  }
 
   // if we have a process execute it (IF WE'RE NOT OUR OWN SOURCE)
   if(this->process != NULL && this != source) {
@@ -555,6 +567,24 @@ observable_t __fold_double(observable_t ob, observer_t folder, double init) {
   observable_t folded = observe(just(ob), folder, sizeof(double));
   *((double*)folded->value) = init;
   return folded;
+}
+
+// filter support
+void _copy_value(observation_t ob) {
+  observable_t this = ((participants_t)ob->observer)->target;
+  // redirect value to the value of the emitting merged observable
+  observable_value_copy(((participants_t)ob->observer)->source, this);
+
+  // cached args are out of date, because we're modifying the pointer itself
+  // force refresh cache on all observers of merged_ob
+  _update_observers_args(this);
+}
+
+observable_t __filter(int size, observable_t observable, validator_t validator) {
+  observable_t filter = observe(just(observable), _copy_value, size);
+  filter->prop |= OUT_IS_PART;
+  filter->validate = validator;
+  return filter;
 }
 
 // scripting support

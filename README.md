@@ -365,4 +365,27 @@ The underlying principle (aka `memcpy`) also allows for the implementation of a 
   set(int, a, 3);                     // _a == 3 now
 ```
 
+### Filtering (filter.c)
+
+A filter might seem as simple as an observer with a function that validates every update, but it couldn't be implemented without the copy functionality introduced in the previous paragraph.
+
+From the outside it is as simple as any other observer we have introduced so far:
+
+```c
+bool odd(unknown_t value) {
+  return *(int*)value % 2 != 0;
+}
+
+int main(void) {
+  int _var1;
+  observable_t var1 = observe(int, _var1);
+
+  observable_t filtered = filter(int, var1, odd);
+
+  set(int, var1, 1);    // var1 == filtered == 1
+  set(int, var1, 2);    // var1 == 2 | filtered == 1
+  set(int, var1, 3);    // var1 == filtered == 3
+}
+```
+
 _To be continued..._
