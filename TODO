@@ -1,6 +1,7 @@
 TODO
-- can do_#type() trick be applied to more? (cfr fold)
+- add type size + observable_value_copy()
 - introduce filter
+- can do_#type() trick be applied to more? (cfr fold)
 - implement loop-detection
 - introduce time
 - introduce timeout
