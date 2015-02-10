@@ -61,3 +61,6 @@
 #define __d2(x, f) __to_dot(x, f, true)
 #define __dx(_1,_2,NAME,...) NAME
 #define to_dot(...) __dx(__VA_ARGS__, __d2, __d1)(__VA_ARGS__)
+
+// set support
+#define set(t,o,v) __set_##t(o,v)

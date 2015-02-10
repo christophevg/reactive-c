@@ -655,10 +655,23 @@ void __to_dot(observable_t this, FILE *fp, bool preamble) {
   if(preamble) { fprintf(fp, "}\n"); }
 }
 
-// copy support
+// value manipulation support
+
 void observable_value_copy(observable_t src, observable_t trg) {
   // we don't know what we're copying, but we know the size ;-)
   // only copy when internal memory space is the same
   assert(src->type_size == trg->type_size);
   memcpy(trg->value, src->value, src->type_size);
+}
+
+void __set_int(observable_t this, int value) {
+  assert(this->type_size == sizeof(int));
+  memcpy(this->value, &value, sizeof(int));
+  observe_update(this);
+}
+
+void __set_double(observable_t this, double value) {
+  assert(this->type_size == sizeof(double));
+  memcpy(this->value, &value, sizeof(double));
+  observe_update(this);
 }
