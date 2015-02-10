@@ -113,3 +113,18 @@ void __let_string(unknown_t rval, char *lval) {
     case STRING:  rval->private->value.s = lval;       break;
   }
 }
+
+int *__val_int(unknown_t val) {
+  assert(val->private->type == INTEGER);
+  return &val->private->value.i;
+}
+
+double *__val_double(unknown_t val) {
+  assert(val->private->type == DOUBLE);
+  return &val->private->value.d;
+}
+
+char **__val_string(unknown_t val) {
+  assert(val->private->type == STRING);
+  return &val->private->value.s;
+}

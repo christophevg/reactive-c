@@ -31,4 +31,10 @@ void __let_string(unknown_t, char*);
 #define __lx(_1,_2,_3,NAME,...) NAME
 #define let(...) __lx(__VA_ARGS__, __l3, __l2, __l1)(__VA_ARGS__)
 
+int *__val_int(unknown_t);
+double *__val_double(unknown_t);
+char **__val_string(unknown_t);
+
+#define val(t,x) *(__val_##t(x))
+
 #endif

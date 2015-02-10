@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 
 #include "unknown/unknown.h"
 
@@ -36,6 +37,16 @@ int main(void) {
   let(value1, double, 123.123);
 
   assert_equal(as(int, value1), 123, "Expected 123.123 as int to be 123.\n");
+
+  val(int, value1) = (int)987.123;
+
+  assert_equal(as(int, value1), 987, "Expected 987 as int to be 987 .\n");
+
+  unknown_t str = new(string, "hello world");
+  val(string, str) = "updated world";
+
+  assert_true(strcmp(as(string, str), "updated world") == 0,
+              "Expected updated string");
 
   exit(EXIT_SUCCESS);
 }
