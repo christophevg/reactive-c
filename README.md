@@ -388,4 +388,13 @@ int main(void) {
 }
 ```
 
+### Fun fact: Higher Order Observers...
+
+If you ever wonder about higher order observers, consider this: you can make higher order observers using ... macro expansion :-)
+
+```c
+#define filtered_odd_averaged(type, var) \
+        filter(type, average(type, var), odd)
+```
+
 _To be continued..._
