@@ -8,7 +8,7 @@ RM			  = rm -rf
 
 DOT=dot -Nfixedsize=False -Nfontname=Times-Roman -Nshape=rectangle
 
-all: clean run images/await.png
+all: clean run
 
 ${BUILD_DIR}/Makefile: ${BUILD_DIR}
 	@(${CD} $<; ${CMAKE} -DCMAKE_BUILD_TYPE=Debug ../${SRC_DIR})
