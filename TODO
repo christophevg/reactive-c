@@ -6,7 +6,7 @@ TODO
 - introduce time
 - introduce timeout
 - introduce sample?
-- improve garbage collection
+- improve garbage collection (freeing of observable_lists)
 - introduce emit() + fix script
 - change self-disposing any() and all() -> bool value + reset functionality
 
