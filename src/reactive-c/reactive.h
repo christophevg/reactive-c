@@ -93,7 +93,7 @@ observable_t await(observable_t);
 
 // output support
 // dump the given observable (recursively) in dot format
-void __to_dot(observable_t, FILE*, bool);
+void __to_dot(observable_t, FILE*, bool, bool);
 
 // value manipulation support
 void observable_value_copy(observable_t, observable_t);

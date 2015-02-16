@@ -639,7 +639,7 @@ observable_t run(observable_t script) {
 
 // output support
 
-void __to_dot(observable_t this, FILE *fp, bool preamble) {
+void __to_dot(observable_t this, FILE *fp, bool show_memory, bool preamble) {
   if(this->prop & EXPORTED) { return; }
   this->prop |= EXPORTED;
 
@@ -656,7 +656,11 @@ void __to_dot(observable_t this, FILE *fp, bool preamble) {
   }
 
   // self node
-  fprintf(fp, "\"%p\" [label=\"%s\"", this, this->label);
+  if(show_memory) {
+    fprintf(fp, "\"%p\" [label=\"%s\n%p\"", this, this->label, this);
+  } else {
+    fprintf(fp, "\"%p\" [label=\"%s\"", this, this->label);
+  }
   // delayed/suspended observables are grey
   if(this->prop & DELAYED || this->prop & SUSPENDED) {
     fprintf(fp, " color=\"grey\", style=\"filled\"");
@@ -675,7 +679,7 @@ void __to_dot(observable_t this, FILE *fp, bool preamble) {
       fprintf(fp, "\"%p\" -> \"%p\"\n", this, iter->current->ob);
     }
     // recurse
-    __to_dot(iter->current->ob, fp, false);
+    __to_dot(iter->current->ob, fp, show_memory, false);
   });
 
   // sequential relationships (e.g. scripts' steps)
@@ -686,12 +690,12 @@ void __to_dot(observable_t this, FILE *fp, bool preamble) {
 
   // recurse observers
   foreach(observable, this->observers, {
-    __to_dot(iter->current->ob, fp, false);
+    __to_dot(iter->current->ob, fp, show_memory, false);
   });
 
   // recurse parent
   if(this->parent) {
-    __to_dot(this->parent, fp, false);
+    __to_dot(this->parent, fp, show_memory, false);
   }
 
   if(preamble) { fprintf(fp, "}\n"); }
