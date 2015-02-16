@@ -51,10 +51,16 @@ void _add_observable(observables_t list, observable_t observable) {
     assert(list->last == NULL);
     // prepare first list item
     list->first = malloc(sizeof(struct observable_li));
+    list->first->prop = 0;
+    list->first->ob   = NULL;
+    list->first->next = NULL;
     list->last = list->first;
   } else {
     // prepare next list item
     list->last->next = malloc(sizeof(struct observable_li));
+    list->last->next->prop = 0;
+    list->last->next->ob   = NULL;
+    list->last->next->next = NULL;
     list->last = list->last->next;
   }
   list->last->ob   = observable;
@@ -220,12 +226,6 @@ observable_t _clear_observeds(observable_t this) {
   return this;
 }
 
-// utility function to break one link between observer and observed
-void _stop_observing(observable_t this, observable_t observed) {
-  _remove_observable(this->observeds, observed);
-  _remove_observable(observed->observers, this);
-}
-
 // actually free the entire observable structure
 void _free(observable_t this) {
   _clear_observers(this);
@@ -290,7 +290,6 @@ void _merge_handler(observation_t ob) {
 }
 
 void _all_handler(observation_t ob) {
-  printf("all handler\n");
   observable_t this = (observable_t)((participants_t)ob->observer)->target;
   if(this->prop & SUSPENDED) { return; }
   if(this->prop & DELAYED)   { return; }
@@ -299,7 +298,6 @@ void _all_handler(observation_t ob) {
 
   // track item by removing it from our observeds list, we're no longer 
   // interested in updates
-  //_stop_observing(this, observed);
   int count=0;
   int stopped=0;
   foreach(observable, this->observeds, {
@@ -319,15 +317,12 @@ void _all_handler(observation_t ob) {
 }
 
 void _any_handler(observation_t ob) {
-  printf("any handler\n");
   observable_t this = (observable_t)((participants_t)ob->observer)->target;
   if(this->prop & SUSPENDED) { return; }
   if(this->prop & DELAYED)   { return; }
 
-  observable_t observed = (observable_t)((participants_t)ob->observer)->source;
-  
-  // any hit is ok, so simply notify our observers of an update (of no value)
-  _stop_observing(this, observed);
+  // any hit is ok, we dispose ourselves and will be cleaned up by one of our
+  // observeds when its done with us. in the meantime, we'll ignore more updates
   dispose(this);
 }
 
@@ -354,7 +349,6 @@ observable_t _step(observable_t script) {
 }
 
 void _finalize_await(observation_t ob) {
-  printf("finalize await\n");
   observable_t this = (observable_t)((participants_t)ob->observer)->target;
 
   if(this->prop & SUSPENDED) { return; }
@@ -467,7 +461,6 @@ observable_t on_activation(observable_t this, observable_callback_t callback) {
 // marks an observable for disposing, which is honored when an update-push is
 // executed on it.
 void dispose(observable_t this) {
-  printf("disposing...\n");
   if(this->on_dispose) { 
     this->on_dispose(this);
   }
@@ -476,7 +469,6 @@ void dispose(observable_t this) {
 
 // trigger for (external) update of observable
 void _observe_update(observable_t this, observable_t source) {
-  printf("observe update\n");
   // if we're marked for disposal (externally), we don't perform any processing
   // one of our observed parents will garbage collect us (sometime)
   // TODO: only true for observables that observe and can be updated
@@ -489,7 +481,6 @@ void _observe_update(observable_t this, observable_t source) {
   if(this->validate){
     if(! this->validate(source->value) ) {
       this->prop |= STOP_PROP;
-      printf("not valid\n");
       return;
     } else {
       this->prop &= ~STOP_PROP;
@@ -498,7 +489,6 @@ void _observe_update(observable_t this, observable_t source) {
 
   // if we have a process execute it (IF WE'RE NOT OUR OWN SOURCE)
   if(this->process != NULL && this != source) {
-    printf("process\n");
     // do we pass the value or the object itself?
     struct observation ob = { .observeds = this->args };
     if(this->prop & OUT_IS_PART) {
@@ -519,7 +509,6 @@ void _observe_update(observable_t this, observable_t source) {
     // dependant on us, so with level = our level + 1. those with even higher
     // levels are dependant on other levels below us and will be triggered as
     // soon as their parents all have been updated
-    int i=0;
     foreach(observable, this->observers, {
       if( ! (iter->current->prop & DISPOSED) ) {
         if(iter->current->ob->level == this->level + 1) {
@@ -527,8 +516,6 @@ void _observe_update(observable_t this, observable_t source) {
         }
       }
     });
-  } else {
-    printf("stop prop\n");
   }
 
   // perform garbage collection (on our observers)
