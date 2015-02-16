@@ -101,9 +101,9 @@ bool _no_more_observables(observables_t list) {
 
 int _count_observables(observables_t list) {
   int count = 0;
-  foreach(observable, list) {
+  foreach(observable, list, {
     count++;
-  }
+  });
   return count;
 }
 
@@ -181,9 +181,9 @@ observable_t _update_level(observable_t this) {
 observable_t _update_args(observable_t this) {
   // compute number of observed observables
   int count = 0;
-  foreach(observable, this->observeds) {
+  foreach(observable, this->observeds, {
     count++;
-  }
+  });
   // optionally free existing list
   if(this->args != NULL) { free(this->args); }
   
@@ -192,10 +192,10 @@ observable_t _update_args(observable_t this) {
   
   // copy pointers to values
   count = 0;
-  foreach(observable, this->observeds) {
+  foreach(observable, this->observeds, {
     this->args[count] = iter->current->ob->value;
     count++;
-  }
+  });
 
   return this;
 }
@@ -237,35 +237,38 @@ void _free(observable_t this) {
 
 // check all observers and remove those that are marked for disposal
 observable_t _gc(observable_t this) {
+  // do I _have_ any observers?
   if(this->observers->first == NULL) {
     assert(this->observers->last == NULL);
     return this;
   }
 
-  // garbage collect disposed observers
+  // yes, check them and garbage collect disposed observers
   observable_li_t item = this->observers->first;
-  if(item->ob->prop & DISPOSED) { // first got disposed
+
+  // first got disposed
+  if(item->ob->prop & DISPOSED) {
     _free(item->ob);  // free entire observable (including all links)
     return this;
   }
   // not first, look further
   while(item->next) {
-    while(item->next && (item->next->ob->prop & DISPOSED)) {
-      observable_li_t temp = item->next;
-      item->next = item->next->next;
-      _free(item->ob);
-      free(item);
+    if(item->next->ob->prop & DISPOSED) {
+      observable_li_t todo = item;
+      item = item->next; // else there is no next ;-)
+      _free(todo->ob);
+    } else {
+      item = item->next;
     }
-    item = item->next;
   }
   return this;
 }
 
 // update observers' arguments - probably because this' value changed location
 void _update_observers_args(observable_t this) {
-  foreach(observable, this->observers) {
+  foreach(observable, this->observers, {
     _update_args(iter->current->ob);
-  }
+  });
 }
 
 // internal observer function to merge value updates to multiple observables
@@ -287,6 +290,7 @@ void _merge_handler(observation_t ob) {
 }
 
 void _all_handler(observation_t ob) {
+  printf("all handler\n");
   observable_t this = (observable_t)((participants_t)ob->observer)->target;
   if(this->prop & SUSPENDED) { return; }
   if(this->prop & DELAYED)   { return; }
@@ -298,13 +302,13 @@ void _all_handler(observation_t ob) {
   //_stop_observing(this, observed);
   int count=0;
   int stopped=0;
-  foreach(observable, this->observeds) {
+  foreach(observable, this->observeds, {
     if(iter->current->ob == observed) {
       iter->current->prop |= DISPOSED;
     }
     count++;
     if(iter->current->prop & DISPOSED) { stopped++; }
-  }
+  });
     
   // have we seen all items?
   // if(_no_more_observables(this->observeds)) {
@@ -315,6 +319,7 @@ void _all_handler(observation_t ob) {
 }
 
 void _any_handler(observation_t ob) {
+  printf("any handler\n");
   observable_t this = (observable_t)((participants_t)ob->observer)->target;
   if(this->prop & SUSPENDED) { return; }
   if(this->prop & DELAYED)   { return; }
@@ -349,6 +354,7 @@ observable_t _step(observable_t script) {
 }
 
 void _finalize_await(observation_t ob) {
+  printf("finalize await\n");
   observable_t this = (observable_t)((participants_t)ob->observer)->target;
 
   if(this->prop & SUSPENDED) { return; }
@@ -428,9 +434,9 @@ observable_t start(observable_t this) {
   // step 1: acticate ourselves
   this->prop &= ~SUSPENDED;
   // step 2: if we have delayed observeds, un-delay them
-  foreach(observable, this->observeds) {
+  foreach(observable, this->observeds, {
     iter->current->ob->prop &= ~(DELAYED);
-  }
+  });
   
   return this;
 }
@@ -461,6 +467,7 @@ observable_t on_activation(observable_t this, observable_callback_t callback) {
 // marks an observable for disposing, which is honored when an update-push is
 // executed on it.
 void dispose(observable_t this) {
+  printf("disposing...\n");
   if(this->on_dispose) { 
     this->on_dispose(this);
   }
@@ -469,6 +476,7 @@ void dispose(observable_t this) {
 
 // trigger for (external) update of observable
 void _observe_update(observable_t this, observable_t source) {
+  printf("observe update\n");
   // if we're marked for disposal (externally), we don't perform any processing
   // one of our observed parents will garbage collect us (sometime)
   // TODO: only true for observables that observe and can be updated
@@ -481,6 +489,7 @@ void _observe_update(observable_t this, observable_t source) {
   if(this->validate){
     if(! this->validate(source->value) ) {
       this->prop |= STOP_PROP;
+      printf("not valid\n");
       return;
     } else {
       this->prop &= ~STOP_PROP;
@@ -489,6 +498,7 @@ void _observe_update(observable_t this, observable_t source) {
 
   // if we have a process execute it (IF WE'RE NOT OUR OWN SOURCE)
   if(this->process != NULL && this != source) {
+    printf("process\n");
     // do we pass the value or the object itself?
     struct observation ob = { .observeds = this->args };
     if(this->prop & OUT_IS_PART) {
@@ -510,13 +520,15 @@ void _observe_update(observable_t this, observable_t source) {
     // levels are dependant on other levels below us and will be triggered as
     // soon as their parents all have been updated
     int i=0;
-    foreach(observable, this->observers) {
+    foreach(observable, this->observers, {
       if( ! (iter->current->prop & DISPOSED) ) {
         if(iter->current->ob->level == this->level + 1) {
           _observe_update(iter->current->ob, this);
         }
       }
-    }
+    });
+  } else {
+    printf("stop prop\n");
   }
 
   // perform garbage collection (on our observers)
@@ -656,7 +668,7 @@ void __to_dot(observable_t this, FILE *fp, bool preamble) {
   fprintf(fp, "]\n");
 
   // observeds
-  foreach(observable, this->observeds) {
+  foreach(observable, this->observeds, {
     // only generate links for observed ... not also for observers
     if(!(iter->current->prop & EXPORTED)) {
       iter->current->prop |= EXPORTED;
@@ -664,7 +676,7 @@ void __to_dot(observable_t this, FILE *fp, bool preamble) {
     }
     // recurse
     __to_dot(iter->current->ob, fp, false);
-  }
+  });
 
   // sequential relationships (e.g. scripts' steps)
   if(this->next) {
@@ -673,9 +685,9 @@ void __to_dot(observable_t this, FILE *fp, bool preamble) {
   }
 
   // recurse observers
-  foreach(observable, this->observers) {
+  foreach(observable, this->observers, {
     __to_dot(iter->current->ob, fp, false);
-  }
+  });
 
   // recurse parent
   if(this->parent) {
