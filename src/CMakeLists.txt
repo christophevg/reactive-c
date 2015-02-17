@@ -3,7 +3,10 @@ cmake_minimum_required(VERSION 2.4)
 
 SET(LIBS "reactive-c/reactive.c" "unit/test.c" "unknown/unknown.c")
 
-set(CMAKE_C_FLAGS "-std=c99") # ok for clang and gcc, good enough for now
+# ok for clang and gcc, good enough for now
+add_compile_options(-std=c99)
+add_compile_options(-Wall)
+add_compile_options(-pedantic)
 
 # top-level target, run-targets for each executable are added below
 add_custom_target(run)
