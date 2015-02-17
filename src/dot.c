@@ -10,7 +10,7 @@ int main(void) {
   observable_t b = observe(int, _b);
   observable_t c = observe(int, _c);
 
-  observable_t s = script(
+  script(
     await(a),
     await(b),
     await(delayed(all(a, b, c))),
