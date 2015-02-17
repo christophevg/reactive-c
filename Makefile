@@ -8,10 +8,12 @@ RM			  = rm -rf
 
 DOT=dot -Nfixedsize=False -Nfontname=Times-Roman -Nshape=rectangle
 
+TYPE=Release
+
 all: clean run
 
 ${BUILD_DIR}/Makefile: ${BUILD_DIR}
-	@(${CD} $<; ${CMAKE} -DCMAKE_BUILD_TYPE=Debug ../${SRC_DIR})
+	@(${CD} $<; ${CMAKE} -DCMAKE_BUILD_TYPE=${TYPE} ../${SRC_DIR})
 
 build: ${BUILD_DIR}/Makefile
 	@(${CD} ${BUILD_DIR}; ${MAKE})
