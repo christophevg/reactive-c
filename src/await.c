@@ -18,15 +18,17 @@ int main(void) {
   observable_t b = observe(int, _b);
   observable_t c = observe(int, _c);
 
+  // temp solution for GCC (correctly) not honoring the order of argument
+  // evaluation as expected...
+  observable_t s1 = await(a);
+  observable_t s2 = await(b);
+  observable_t s3 = await(delayed(all(a, b, c)));
+  observable_t s4 = await(delayed(any(b, c)));
+  observable_t s5 = await(        all(a, b, c));
+
   run(
     on_activation(
-      script(
-        await(a),
-        await(b),
-        await(delayed(all(a, b, c))),
-        await(delayed(any(b, c))),
-        await(        all(a, b, c))
-      ),
+      script( s1, s2, s3, s4, s5 ),
       add_step_counter
     )
   );
@@ -55,17 +57,18 @@ int main(void) {
   assert_equal(steps, 2, "Expected 2 steps, observed %d.\n", steps);
 
   _c = 3; observe_update(c);  // finalizes await(delayed(all(a,b,c)))
-                              // but also the already started await(all(a,b,c))
-  assert_equal(steps, 4, "Expected 4 steps, observed %d.\n", steps);
+                              // but also the already started all(a,b,c)
+                              // but not its await step
+  assert_equal(steps, 3, "Expected 3 steps, observed %d.\n", steps);
 
   // await(delayed(any(b,c)))
   _a = 4; observe_update(a);  // does nothing
-  assert_equal(steps, 4, "Expected 4 steps, observed %d.\n", steps);
-
-  _b = 4; observe_update(b);  // does nothing
-  assert_equal(steps, 4, "Expected 4 steps, observed %d.\n", steps);
+  assert_equal(steps, 3, "Expected 3 steps, observed %d.\n", steps);
 
   _c = 4; observe_update(c);  // finalizes await(delayed(any(b,c)))
+                              // this also moves the script forward to the last
+                              // await(all(a,b,c)), of which the all()
+                              // observable has already finished
   assert_equal(steps, 5, "Expected 5 steps, observed %d.\n", steps);
 
   // script done, nothing triggered anymore

@@ -38,6 +38,9 @@ struct observables {
 
 construct_iterator(observable)
 
+// a list of script waiting to proceed
+struct observables scripts_waiting = { NULL, NULL };
+
 // constructor and accessors for an observables list
 observables_t _new_observables_list(void) {
   observables_t list = malloc(sizeof(struct observables));
@@ -65,6 +68,15 @@ void _add_observable(observables_t list, observable_t observable) {
   }
   list->last->ob   = observable;
   list->last->next = NULL;
+}
+
+bool _contains_observable(observables_t list, observable_t observable) {
+  observable_li_t item = list->first;
+  while(item) {
+    if(item->ob == observable) { return true; }
+    item = item->next;
+  }
+  return false;
 }
 
 void _remove_observable(observables_t list, observable_t observable) {
@@ -276,7 +288,11 @@ void _update_observers_args(observable_t this) {
 void _merge_handler(observation_t ob) {
   observable_t this = ((participants_t)ob->observer)->target;
   if(this->prop & SUSPENDED) { return; }
-  if(this->prop & DELAYED)   { return; }
+  if(this->prop & DELAYED)   { 
+    this->prop |= STOP_PROP; // don't propagate
+    return;
+  }
+  this->prop &= ~STOP_PROP; // ok ... propagate
 
   // redirect value to the value of the emitting merged observable
   this->value = ((participants_t)ob->observer)->source->value;
@@ -292,7 +308,10 @@ void _merge_handler(observation_t ob) {
 void _all_handler(observation_t ob) {
   observable_t this = (observable_t)((participants_t)ob->observer)->target;
   if(this->prop & SUSPENDED) { return; }
-  if(this->prop & DELAYED)   { return; }
+  if(this->prop & DELAYED)   {
+    this->prop |= STOP_PROP; // don't propagate
+    return;
+  }
 
   observable_t observed = (observable_t)((participants_t)ob->observer)->source;
 
@@ -319,11 +338,25 @@ void _all_handler(observation_t ob) {
 void _any_handler(observation_t ob) {
   observable_t this = (observable_t)((participants_t)ob->observer)->target;
   if(this->prop & SUSPENDED) { return; }
-  if(this->prop & DELAYED)   { return; }
+  if(this->prop & DELAYED)   {
+    this->prop |= STOP_PROP; // don't propagate
+    return;
+  }
+  this->prop &= ~STOP_PROP; // ok ... propagate
 
   // any hit is ok, we dispose ourselves and will be cleaned up by one of our
   // observeds when its done with us. in the meantime, we'll ignore more updates
   dispose(this);
+}
+
+observable_t _proceed(observable_t script) {
+  // add the script to the list of script that is ready to proceed, it will be
+  // moved ahead once the top-level observation has been processed.
+  // TODO: is this fine-grained enough? come up with scenario to invalidate this
+  if(!_contains_observable(&scripts_waiting, script)) {
+    _add_observable(&scripts_waiting, script);
+  }
+  return script;
 }
 
 observable_t _step(observable_t script) {
@@ -342,6 +375,12 @@ observable_t _step(observable_t script) {
     step->parent->on_activation(step);
   }
 
+  // do we (still) have anything to do? our observeds might already be done.
+  while(step && step->observeds && _count_observables(step->observeds) == 0) {
+    dispose(step);
+    step = _step(step);
+  }
+
   // observe the new step (future use)
   // _add_observable(script->observeds, step);
   
@@ -357,9 +396,7 @@ void _finalize_await(observation_t ob) {
   dispose(this);
 
   // tell the script to move to the next step
-  // TODO: could this be done with an on_dispose handler ? (once multiple?) :-)
-  //       this might solve the parent relation ship ;-)
-  _step(this->parent);
+  _proceed(this->parent);
 }
 
 // turns a variadic list of observables into an linked list. this is a helper
@@ -525,6 +562,16 @@ void _observe_update(observable_t this, observable_t source) {
 // public method can only trigger update, not be a source
 void observe_update(observable_t observable) {
   _observe_update(observable, NULL);
+  // During the propagation of the update, scripts might have finalized a step,
+  // and are waiting to proceed. This cannot be done safely otherwise (for now)
+  // because an update triggering a step in the script might also trigger the
+  // next step, which might not what is intended.
+  // At the end of an observation propagation, we proceed all scripts that are
+  // marked as such.
+  foreach(observable, &scripts_waiting,{
+    _step(iter->current->ob);
+  });
+  _clear_observables(&scripts_waiting);
 }
 
 // extract current value from this observable
