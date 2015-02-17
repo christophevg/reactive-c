@@ -1,4 +1,4 @@
-# Reactive C [![Build Status](https://circleci.com/gh/christophevg/reactive-c.png)](https://circleci.com/gh/christophevg/reactive-c)
+# Reactive C <a href="https://circleci.com/gh/christophevg/reactive-c"><img style="float:right" src="https://circleci.com/gh/christophevg/reactive-c.png"></a>
 
 An experiment on implementing a reactive programming (RP) API in pure C.  
 Christophe VG (<contact@christophe.vg>)  
@@ -246,7 +246,7 @@ int add(int a, int b) {
   return a + b;
 }
 
-lift2(int, add);
+lift2(int, add)
 
 int main(void) {
   int _var1, _var2;
