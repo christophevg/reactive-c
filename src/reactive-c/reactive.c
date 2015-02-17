@@ -425,7 +425,7 @@ observable_t __observing(char *label, observables_t observeds,
 
 // actually activate the observable in the dependecy graph
 observable_t start(observable_t this) {
-  // step 1: acticate ourselves
+  // step 1: activate ourselves
   this->prop &= ~SUSPENDED;
   // step 2: if we have delayed observeds, un-delay them
   foreach(observable, this->observeds, {
