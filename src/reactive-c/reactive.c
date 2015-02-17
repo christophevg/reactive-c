@@ -139,6 +139,10 @@ enum properties {
   EXPORTED    = 128,
 };
 
+// macro's to hide underlying bitwise operations
+#define _is_suspended(o) (o->prop & SUSPENDED)
+#define _is_delayed(o) (o->prop & DELAYED)
+
 // structure of observable is private
 typedef struct observable {
   char           *label;
@@ -160,6 +164,38 @@ typedef struct observable {
 } observable;
 
 // private functionality
+
+// debugging functionality
+#ifndef NDEBUG
+void _debug_level(char* title, observable_t this, int level) {
+  printf("%*s: %s (%p) prop:", level, title, this->label, (void*)this);
+  if(this->prop & OUT_IS_PART) { printf(" part"); }
+  if(this->prop & DISPOSED)    { printf(" disposed"); }
+  if(_is_suspended(this))      { printf(" suspended"); }
+  if(_is_delayed(this))        { printf(" delayed"); }
+  if(this->prop & STOP_PROP)   { printf(" stop_prop"); }
+  printf("\n");
+  if(this->observeds->first != NULL) {
+    printf("%*.s   observing:\n", level, "");
+    foreach(observable, this->observeds, {
+      _debug_level("   - ", iter->current->ob, level+3);
+    });
+  }
+  if(this->next != NULL && this->parent == NULL) {
+    printf("steps:\n");
+    observable_t step = this->next;
+    int c = 1;
+    while(step) {
+      printf("%d)\n", c++);
+      _debug_level("", step, level + 3);
+      step = step->next;
+    }
+  }
+}
+#define _debug(t,o) _debug_level(t,o,0)
+#else
+#define _debug(t,o)
+#endif
 
 // constructor for empty observable
 observable_t _new(char *label) {
@@ -225,6 +261,7 @@ observable_t _clear_observers(observable_t this) {
     _remove_observable(item->ob->observeds, this);
   }
   _clear_observables(this->observers);
+  _debug("CLEARED OBSERVERS", this);
   return this;
 }
 
@@ -235,11 +272,13 @@ observable_t _clear_observeds(observable_t this) {
     _remove_observable(item->ob->observers, this);
   }
   _clear_observables(this->observeds);
+  _debug("CLEARED OBSERVEDS", this);
   return this;
 }
 
 // actually free the entire observable structure
 void _free(observable_t this) {
+  _debug("FREEING", this);
   _clear_observers(this);
   _clear_observeds(this);
   if(this->args)  { free(this->args);  }
@@ -249,30 +288,39 @@ void _free(observable_t this) {
 
 // check all observers and remove those that are marked for disposal
 observable_t _gc(observable_t this) {
+  _debug("GC BEFORE", this);
   // do I _have_ any observers?
   if(this->observers->first == NULL) {
     assert(this->observers->last == NULL);
     return this;
   }
 
-  // yes, check them and garbage collect disposed observers
+  // yes, we have observers, check them and garbage collect disposed observers
   observable_li_t item = this->observers->first;
 
-  // first got disposed
-  if(item->ob->prop & DISPOSED) {
-    _free(item->ob);  // free entire observable (including all links)
-    return this;
+  // dispose first in observers list
+  while(item && item->ob->prop & DISPOSED) {
+    observable_t disposed = item->ob;
+    _remove_observable(this->observers, disposed);
+    _free(disposed);
+    item = this->observers->first;
   }
-  // not first, look further
-  while(item->next) {
-    if(item->next->ob->prop & DISPOSED) {
-      observable_li_t todo = item;
-      item = item->next; // else there is no next ;-)
-      _free(todo->ob);
-    } else {
-      item = item->next;
+  // dispose inside observers list
+  if(item) {
+    item = item->next;
+    while(item) {
+      if(item->ob->prop & DISPOSED) {
+        observable_t disposed = item->ob;
+        item = item->next;
+        _remove_observable(this->observers, disposed);
+        _free(disposed);
+      } else {
+        item = item->next;
+      }
     }
   }
+
+  _debug("GC AFTER", this);
   return this;
 }
 
@@ -287,8 +335,8 @@ void _update_observers_args(observable_t this) {
 // into one "merged" observable observer.
 void _merge_handler(observation_t ob) {
   observable_t this = ((participants_t)ob->observer)->target;
-  if(this->prop & SUSPENDED) { return; }
-  if(this->prop & DELAYED)   { 
+  if(_is_suspended(this)) { return; }
+  if(_is_delayed(this))   { 
     this->prop |= STOP_PROP; // don't propagate
     return;
   }
@@ -307,8 +355,8 @@ void _merge_handler(observation_t ob) {
 
 void _all_handler(observation_t ob) {
   observable_t this = (observable_t)((participants_t)ob->observer)->target;
-  if(this->prop & SUSPENDED) { return; }
-  if(this->prop & DELAYED)   {
+  if(_is_suspended(this)) { return; }
+  if(_is_delayed(this))   { 
     this->prop |= STOP_PROP; // don't propagate
     return;
   }
@@ -321,6 +369,8 @@ void _all_handler(observation_t ob) {
   int stopped=0;
   foreach(observable, this->observeds, {
     if(iter->current->ob == observed) {
+      // TODO: fix double use on observable and observable_li
+      _debug("ALL OBSERVED UPDATE", observed);
       iter->current->prop |= DISPOSED;
     }
     count++;
@@ -331,18 +381,21 @@ void _all_handler(observation_t ob) {
   // if(_no_more_observables(this->observeds)) {
   if(count == stopped) {
     this->prop &= ~(STOP_PROP); // allow propagation to take place
+    _debug("FINALIZED ALL", this);
     dispose(this);
   }
 }
 
 void _any_handler(observation_t ob) {
   observable_t this = (observable_t)((participants_t)ob->observer)->target;
-  if(this->prop & SUSPENDED) { return; }
-  if(this->prop & DELAYED)   {
+  if(_is_suspended(this)) { return; }
+  if(_is_delayed(this))   { 
     this->prop |= STOP_PROP; // don't propagate
     return;
   }
   this->prop &= ~STOP_PROP; // ok ... propagate
+
+  _debug("FINALIZED ANY", this);
 
   // any hit is ok, we dispose ourselves and will be cleaned up by one of our
   // observeds when its done with us. in the meantime, we'll ignore more updates
@@ -362,6 +415,7 @@ observable_t _proceed(observable_t script) {
 observable_t _step(observable_t script) {
   observable_t step = script->next;
   if(step == NULL) { return NULL; } // end of script
+  _debug("STEP TO", step);
   
   // link new step to script
   step->parent = script->parent ? script->parent : script;
@@ -371,6 +425,7 @@ observable_t _step(observable_t script) {
 
   // start
   start(step);
+  // is the parent/script has an on_activation handler, execute it on the step
   if(step->parent && step->parent->on_activation) {
     step->parent->on_activation(step);
   }
@@ -389,6 +444,7 @@ observable_t _step(observable_t script) {
 
 void _finalize_await(observation_t ob) {
   observable_t this = (observable_t)((participants_t)ob->observer)->target;
+  _debug("FINALIZE AWAIT", this);
 
   if(this->prop & SUSPENDED) { return; }
 
@@ -426,7 +482,7 @@ observable_t __observing_value(char *label, unknown_t value, int size) {
   this->prop        = VALUE;
   this->value       = value;
   this->type_size   = size;
-  return suspended(this);
+  return this;
 }
 
 // create an observable observer (function), storing the resulting value in a
@@ -454,32 +510,49 @@ observable_t __observing(char *label, observables_t observeds,
     iter = iter->next;
   }
 
-  // step 4: by default we're SUSPENDED
-  return suspended(this);
+  return this;
 }
 
 // public interface
 
-// actually activate the observable in the dependecy graph
-observable_t start(observable_t this) {
-  // step 1: activate ourselves
-  this->prop &= ~SUSPENDED;
-  // step 2: if we have delayed observeds, un-delay them
-  foreach(observable, this->observeds, {
-    iter->current->ob->prop &= ~(DELAYED);
-  });
-  
+observable_t suspend(observable_t this) {
+  if(!_is_suspended(this)) {
+    this->prop |= SUSPENDED;
+    _debug("SUSPEND", this);
+  }
   return this;
 }
 
-// undo start ;-)
-observable_t suspend(observable_t this) {
-  this->prop |= SUSPENDED;
+observable_t unsuspend(observable_t this) {
+  if(_is_suspended(this)) {
+    this->prop &= ~SUSPENDED;
+    _debug("UNSUSPEND", this);
+  }
   return this;
 }
 
 observable_t delay(observable_t this) {
   this->prop |= DELAYED;
+  _debug("DELAY", this);
+  return this;
+}
+
+observable_t undelay(observable_t this) {
+  this->prop &= ~DELAYED;
+  _debug("UNDELAY", this);
+  return this;
+}
+
+// actually activate the observable in the dependecy graph
+observable_t start(observable_t this) {
+  _debug("STARTING", this);
+  // step 1: activate ourselves
+  unsuspend(this);
+  // step 2: if we have delayed observeds, un-delay them
+  foreach(observable, this->observeds, {
+    iter->current->ob->prop &= ~(DELAYED);
+  });
+  _debug("STARTED", this);
   return this;
 }
 
@@ -498,10 +571,11 @@ observable_t on_activation(observable_t this, observable_callback_t callback) {
 // marks an observable for disposing, which is honored when an update-push is
 // executed on it.
 void dispose(observable_t this) {
+  this->prop |= DISPOSED;
+  _debug("DISPOSE", this);
   if(this->on_dispose) { 
     this->on_dispose(this);
   }
-  this->prop |= DISPOSED;
 }
 
 // trigger for (external) update of observable
@@ -561,6 +635,7 @@ void _observe_update(observable_t this, observable_t source) {
 
 // public method can only trigger update, not be a source
 void observe_update(observable_t observable) {
+  _debug("UPDATE", observable);
   _observe_update(observable, NULL);
   // During the propagation of the update, scripts might have finalized a step,
   // and are waiting to proceed. This cannot be done safely otherwise (for now)
@@ -568,7 +643,7 @@ void observe_update(observable_t observable) {
   // next step, which might not what is intended.
   // At the end of an observation propagation, we proceed all scripts that are
   // marked as such.
-  foreach(observable, &scripts_waiting,{
+  foreach(observable, &scripts_waiting, {
     _step(iter->current->ob);
   });
   _clear_observables(&scripts_waiting);
@@ -580,25 +655,29 @@ unknown_t observable_value(observable_t observable) {
 }
 
 // generic constructor for observables that observe a set of observables
-observable_t __combine(char *label, observables_t obs, observer_t handler) {
-  observable_t combination = start(__observing(label, obs, handler, 0));
+observable_t __combine(char *label, observables_t observeds, observer_t handler) {
+  observable_t combination = start(__observing(label, observeds, handler, 0));
   combination->prop |= OUT_IS_PART;
   return combination;
 }
 
 // create a single observable observer from a list of observed observables.
-observable_t __merge(char *label, observables_t obs) {
-  return __combine(label, obs, _merge_handler);
+observable_t __merge(char *label, observables_t observeds) {
+  observable_t observer = __combine(label, observeds, _merge_handler);
+  _debug("MERGE", observer);
+  return observer;
 }  
 
-observable_t __all(char *label, observables_t obs) {
-  observable_t observer = __combine(label, obs, _all_handler);
-  observer->prop |= STOP_PROP;
+observable_t __all(char *label, observables_t observeds) {
+  observable_t observer = __combine(label, observeds, _all_handler);
+  _debug("ALL", observer);
   return observer;
 }
 
-observable_t __any(char *label, observables_t obs) {
-  return __combine(label, obs, _any_handler);
+observable_t __any(char *label, observables_t observeds) {
+  observable_t observer = __combine(label, observeds, _any_handler);
+  _debug("ANY", observer);
+  return observer;
 }
 
 // fold support
@@ -639,6 +718,8 @@ observable_t __filter(int size, observable_t observable, validator_t validator) 
 observable_t await(observable_t observable) {
   observable_t this = __observing("await", just(observable), _finalize_await, 0);
   this->prop       |= OUT_IS_PART;
+  _debug("AWAIT", this);
+  suspend(this);
   return this;
 }
 
@@ -663,6 +744,8 @@ observable_t __script(int count, ...) {
     step->parent = script;
   }
   va_end(ap);
+
+  _debug("SCRIPT", script);
 
   return script;
 }
