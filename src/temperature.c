@@ -39,12 +39,14 @@ void display(observation_t ob) {
                   *(double*)(ob->observeds[0]), *(double*)(ob->observeds[1]) );
 }
 
-//                 level
-// observable_temp   0   <-- update
-//    /      \
-//   temp_f   |      1
-//     \     /
-//   displayer       2   --> printf
+/*
+                   level
+   observable_temp   0   <-- update
+      /      \
+     temp_f   |      1
+     \     /
+     displayer       2   --> printf
+*/
 
 int main(void) {
   // init temp behavior
@@ -76,7 +78,7 @@ int main(void) {
 
   // let's add an observer that displays the updates from now on using our
   // display observer function
-  observable_t displayer = observe(both(observable_temp, temp_f), display, void);
+  observable_t displayer = observe(both(observable_temp, temp_f), display, void*);
 
   temp_update(19);
   temp_update(20);

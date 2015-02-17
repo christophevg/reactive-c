@@ -11,7 +11,7 @@ int add(int a, int b) {
   return a + b;
 }
 
-lift2(int, add);
+lift2(int, add)
 
 // expands to...
 // void lifted_add(observation_t ob) {

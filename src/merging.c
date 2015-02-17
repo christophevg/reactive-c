@@ -23,7 +23,7 @@ int main(void) {
   observable_t abc = merge(a, b, c);
 
   // observe all (three) updates in one go
-  observe(just(abc), display, void);
+  observe(just(abc), display, void*);
 
   _a = 1;  observe_update(a);
 

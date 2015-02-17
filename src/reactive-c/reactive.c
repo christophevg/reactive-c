@@ -36,7 +36,7 @@ struct observables {
   observable_li_t last;
 } observables;
 
-construct_iterator(observable);
+construct_iterator(observable)
 
 // constructor and accessors for an observables list
 observables_t _new_observables_list(void) {
@@ -644,9 +644,9 @@ void __to_dot(observable_t this, FILE *fp, bool show_memory, bool preamble) {
 
   // self node
   if(show_memory) {
-    fprintf(fp, "\"%p\" [label=\"%s\n%p\"", this, this->label, this);
+    fprintf(fp, "\"%p\" [label=\"%s\n%p\"", (void*)this, this->label, (void*)this);
   } else {
-    fprintf(fp, "\"%p\" [label=\"%s\"", this, this->label);
+    fprintf(fp, "\"%p\" [label=\"%s\"", (void*)this, this->label);
   }
   // delayed/suspended observables are grey
   if(this->prop & DELAYED || this->prop & SUSPENDED) {
@@ -663,7 +663,7 @@ void __to_dot(observable_t this, FILE *fp, bool show_memory, bool preamble) {
     // only generate links for observed ... not also for observers
     if(!(iter->current->prop & EXPORTED)) {
       iter->current->prop |= EXPORTED;
-      fprintf(fp, "\"%p\" -> \"%p\"\n", this, iter->current->ob);
+      fprintf(fp, "\"%p\" -> \"%p\"\n", (void*)this, (void*)iter->current->ob);
     }
     // recurse
     __to_dot(iter->current->ob, fp, show_memory, false);
@@ -671,8 +671,8 @@ void __to_dot(observable_t this, FILE *fp, bool show_memory, bool preamble) {
 
   // sequential relationships (e.g. scripts' steps)
   if(this->next) {
-    fprintf(fp, "\"%p\" -> \"%p\" [style=\"dotted\"]\n", this, this->next);
-    fprintf(fp, "{ rank = same; \"%p\" \"%p\" }", this, this->next);
+    fprintf(fp, "\"%p\" -> \"%p\" [style=\"dotted\"]\n", (void*)this, (void*)this->next);
+    fprintf(fp, "{ rank = same; \"%p\" \"%p\" }", (void*)this, (void*)this->next);
   }
 
   // recurse observers

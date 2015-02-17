@@ -27,7 +27,7 @@ int main(void) {
   // which is basically a wrapper for...
   // observable_t A = observe(just(a), double2string, char, 10);
 
-  observe(just(A), display, void);
+  observe(just(A), display, void*);
 
   _a = 1;  observe_update(a);
   _a = 2;  observe_update(a);
