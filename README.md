@@ -1,4 +1,4 @@
-# Reactive C <a href="https://circleci.com/gh/christophevg/reactive-c"><img style="float:right" src="https://circleci.com/gh/christophevg/reactive-c.png"></a>
+# Reactive C [![Build Status](https://circleci.com/gh/christophevg/reactive-c.png)](https://circleci.com/gh/christophevg/reactive-c)
 
 An experiment on implementing a reactive programming (RP) API in pure C.  
 Christophe VG (<contact@christophe.vg>)  
