@@ -18,17 +18,15 @@ int main(void) {
   observable_t b = observe(int, _b);
   observable_t c = observe(int, _c);
 
-  // temp solution for GCC (correctly) not honoring the order of argument
-  // evaluation as expected...
-  observable_t s1 = await(a);
-  observable_t s2 = await(b);
-  observable_t s3 = await(delayed(all(a, b, c)));
-  observable_t s4 = await(delayed(any(b, c)));
-  observable_t s5 = await(        all(a, b, c));
-
   run(
     on_activation(
-      script( s1, s2, s3, s4, s5 ),
+      script(
+        await(a),
+        await(b),
+        await(delayed(all(a, b, c))),
+        await(delayed(any(b, c))),
+        await(        all(a, b, c))
+      ),
       add_step_counter
     )
   );
