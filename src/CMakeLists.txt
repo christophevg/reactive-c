@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 2.4)
 
 SET(LIBS "reactive-c/reactive.c" "unit/test.c" "unknown/unknown.c")
 
+message("CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}")
+message("CMAKE_CXX_FLAGS_DEBUG is ${CMAKE_CXX_FLAGS_DEBUG}")
+message("CMAKE_CXX_FLAGS_RELEASE is ${CMAKE_CXX_FLAGS_RELEASE}")
+
 # ok for clang and gcc, good enough for now
 add_compile_options(-std=c99)
 add_compile_options(-Wall)
