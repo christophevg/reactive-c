@@ -105,14 +105,12 @@ void _remove_observable(observables_t list, observable_t observable) {
 }
 
 void _clear_observables(observables_t list) {
-  observable_li_t item = list->first;
   while(list->first) {
-    item = list->first;
+    observable_li_t item = list->first;
     list->first = list->first->next;
     free(item);
   }
-  list->first = NULL;
-  list->last  = NULL;
+  list->last = list->first;
 }
 
 int _count_observables(observables_t list) {
@@ -470,7 +468,7 @@ observable_t __observing(char *label, observables_t observeds,
   // step 1: turn the observer into an observable
   observable_t this = _new(label);
   this->prop        = OBSERVER;
-  this->value       = (unknown_t)malloc(size);
+  this->value       = size ? (unknown_t)malloc(size) : NULL;
   this->type_size   = size;
   this->process     = observer;
   this->observeds   = observeds;    // this is already partial in the graph
