@@ -202,7 +202,7 @@ void _debug_level(char* title, observable_t this, int level) {
 }
 #define _debug(t,o) _debug_level(t,o,0)
 #else
-#define _debug(t,o)
+#define _debug(t,o) ((void)0)
 #endif
 
 // constructor for empty observable
