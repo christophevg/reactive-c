@@ -57,19 +57,14 @@ void _add_observable(observables_t list, observable_t observable) {
     assert(list->last == NULL);
     // prepare first list item
     list->first = malloc(sizeof(struct observable_li));
-    list->first->prop = 0;
-    list->first->ob   = NULL;
-    list->first->next = NULL;
     list->last = list->first;
   } else {
     // prepare next list item
     list->last->next = malloc(sizeof(struct observable_li));
-    list->last->next->prop = 0;
-    list->last->next->ob   = NULL;
-    list->last->next->next = NULL;
     list->last = list->last->next;
   }
   list->last->ob   = observable;
+  list->last->prop = 0;
   list->last->next = NULL;
 }
 
