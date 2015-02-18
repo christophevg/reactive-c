@@ -11,12 +11,27 @@ DOT=dot -Nfixedsize=False -Nfontname=Times-Roman -Nshape=rectangle
 TYPE=Release
 
 GCC=gcc-mp-4.6
+VALGRIND=valgrind --track-origins=yes --leak-check=full --show-leak-kinds=all
 SCANBUILD=scan-build-mp-3.5 -o report
 
 all: clean run
 
+RED   = \033[0;31m
+GREEN = \033[0;32m
+NC  	= \033[0m 		# NoColor
+
 verify:
-	@(CC=${GCC} make)
+	@echo "${RED}*** Verifying GCC...${NC}"
+	@printf "${GREEN}press any key to start..${NC}"
+	@read
+	@(CC=${GCC} make TYPE=Debug)
+	@echo "${RED}*** Verifying memory aspects using Valgrind...${NC}"
+	@printf "${GREEN}press any key to continue..${NC}"
+	@read
+	@(${VALGRIND} bin/await)
+	@echo "${RED}*** Verifying static code using scan-build...${NC}"
+	@printf "${GREEN}press any key to continue..${NC}"
+	@read
 	@(${SCANBUILD} make)
 
 ${BUILD_DIR}/Makefile: ${BUILD_DIR}
