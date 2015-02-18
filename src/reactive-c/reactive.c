@@ -39,7 +39,8 @@ struct observables {
 construct_iterator(observable)
 
 // a list of script waiting to proceed
-struct observables scripts_waiting = { NULL, NULL };
+struct observables _scripts_waiting = { NULL, NULL };
+observables_t scripts_waiting = &_scripts_waiting;
 
 // constructor and accessors for an observables list
 observables_t _new_observables_list(void) {
@@ -105,6 +106,7 @@ void _remove_observable(observables_t list, observable_t observable) {
 }
 
 void _clear_observables(observables_t list) {
+  if(list == NULL) { return; }
   while(list->first) {
     observable_li_t item = list->first;
     list->first = list->first->next;
@@ -181,7 +183,7 @@ void _debug_level(char* title, observable_t this, int level) {
   if(_is_delayed(this))        { printf(" delayed"); }
   if(!_is_propagating(this))   { printf(" no_propagation"); }
   printf("\n");
-  if(this->observeds->first) {
+  if(this->observeds && this->observeds) {
     printf("%*.s   observing:\n", level, "");
     foreach(observable, this->observeds, {
       _debug_level("   - ", iter->current->ob, level+3);
@@ -211,7 +213,7 @@ observable_t _new(char *label) {
   this->value         = NULL;
   this->type_size     = 0;
   this->process       = NULL;
-  this->observeds     = _new_observables_list();
+  this->observeds     = NULL; // provided by external allocation (__each)
   this->args          = NULL;
   this->level         = 0;
   this->observers     = _new_observables_list();
@@ -226,10 +228,13 @@ observable_t _new(char *label) {
 // recompute the level for this observable. do this by computing the maximum
 // level for all observed observables + 1
 observable_t _update_level(observable_t this) {
+  if(this->observeds == NULL) { return this; }
   observable_li_t observed = this->observeds->first;
   int level = 0;
+  foreach(observable, this->observeds, {
+    if(iter->current->ob->level > level) { level = observed->ob->level; }
+  });
   while(observed) {
-    if(observed->ob->level > level) { level = observed->ob->level; }
     observed = observed->next;
   }
   this->level = level + 1;
@@ -256,6 +261,7 @@ observable_t _update_args(observable_t this) {
 
 // remove all links to observers
 observable_t _clear_observers(observable_t this) {
+  if(this->observers == NULL) { return this; }
   // remove back-links from our observers
   foreach(observable, this->observers, {
     _remove_observable(iter->current->ob->observeds, this);
@@ -267,6 +273,7 @@ observable_t _clear_observers(observable_t this) {
 
 // remove all links to observed observables
 observable_t _clear_observeds(observable_t this) {
+  if(this->observeds == NULL) { return this; }
   // remove back-links from our observeds
   foreach(observable, this->observeds, {
     _remove_observable(iter->current->ob->observers, this);
@@ -278,31 +285,30 @@ observable_t _clear_observeds(observable_t this) {
 
 // actually free the entire observable structure
 void _free(observable_t this) {
+  if(this == NULL) { return; }
   _debug("FREEING", this);
-  _clear_observers(this);
-  _clear_observeds(this);
+  _clear_observers(this); free(this->observers);
+  if(this->observeds) { _clear_observeds(this); free(this->observeds); }
   if(this->args)  { free(this->args);  this->args  = NULL; }
-  if(this->value) { free(this->value); this->value = NULL; }
+  if(!this->prop & VALUE && this->value) { free(this->value); this->value = NULL; }
   free(this);
 }
 
 observable_t bin = NULL;
-
-#define empty_bin() (bin == NULL)
 
 void _trash(observable_t observable) {
   observable->next = bin;
   bin = observable;
 }
 
-void _empty_trash() {
+void empty_trash() {
   while(bin) {
     observable_t trash = bin;
     bin = bin->next;
     _free(trash);
   }
 }
-  
+
 // update observers' arguments - probably because this' value changed location
 void _update_observers_args(observable_t this) {
   foreach(observable, this->observers, {
@@ -373,8 +379,8 @@ observable_t _proceed(observable_t script) {
   // add the script to the list of script that is ready to proceed, it will be
   // moved ahead once the top-level observation has been processed.
   // TODO: is this fine-grained enough? come up with scenario to invalidate this
-  if(!_contains_observable(&scripts_waiting, script)) {
-    _add_observable(&scripts_waiting, script);
+  if(!_contains_observable(scripts_waiting, script)) {
+    _add_observable(scripts_waiting, script);
   }
   return script;
 }
@@ -400,7 +406,7 @@ observable_t _step(observable_t script) {
   // do we (still) have anything to do? our observeds might already be done.
   while(step && step->observeds && _count_observables(step->observeds) == 0) {
     dispose(step);
-    step = _step(step);
+    step = _step(script);
   }
 
   return step;
@@ -460,6 +466,7 @@ observable_t __observing(char *label, observables_t observeds,
   this->value       = size ? (unknown_t)malloc(size) : NULL;
   this->type_size   = size;
   this->process     = observer;
+  free(this->observeds); // else double allocation - thank you valgrind ;-)
   this->observeds   = observeds;    // this is already partial in the graph
                                     // but cannot be used, no back-links
 
@@ -535,6 +542,7 @@ observable_t on_activation(observable_t this, observable_callback_t callback) {
 // marks an observable for disposing, which is honored when an update-push is
 // executed on it.
 void dispose(observable_t this) {
+  if(this == NULL) { return; }
   this->prop |= DISPOSED;
   _debug("DISPOSE", this);
   if(this->on_dispose) { 
@@ -605,12 +613,12 @@ void observe_update(observable_t observable) {
   // next step, which might not what is intended.
   // At the end of an observation propagation, we proceed all scripts that are
   // marked as such.
-  foreach(observable, &scripts_waiting, {
+  foreach(observable, scripts_waiting, {
     _step(iter->current->ob);
   });
-  _clear_observables(&scripts_waiting);
+  _clear_observables(scripts_waiting);
   // empty the trash
-  _empty_trash();
+  empty_trash();
 }
 
 // extract current value from this observable

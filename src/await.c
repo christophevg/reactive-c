@@ -18,18 +18,16 @@ int main(void) {
   observable_t b = observe(int, _b);
   observable_t c = observe(int, _c);
 
-  run(
-    on_activation(
-      script(
+  observable_t s = 
+    script(
         await(a),
         await(b),
         await(delayed(all(a, b, c))),
         await(delayed(any(b, c))),
         await(        all(a, b, c))
-      ),
-      add_step_counter
-    )
-  );
+    );
+
+  run( on_activation(s, add_step_counter) );
 
   // await(a)
   assert_zero(steps, "Expected no steps, observed %d.\n", steps);
@@ -78,6 +76,14 @@ int main(void) {
 
   _c = 5; observe_update(c);  // does nothing
   assert_equal(steps, 5, "Expected 5 steps, observed %d.\n", steps);
+
+  // clean up to validate memory leaks ;-)
+  dispose(s);
+  dispose(a);
+  dispose(b);
+  dispose(c);
+
+  empty_trash();
 
   exit(EXIT_SUCCESS);
 }
