@@ -257,9 +257,9 @@ observable_t _update_args(observable_t this) {
 // remove all links to observers
 observable_t _clear_observers(observable_t this) {
   // remove back-links from our observers
-  for(observable_li_t item = this->observers->first; item; item = item->next) {
-    _remove_observable(item->ob->observeds, this);
-  }
+  foreach(observable, this->observers, {
+    _remove_observable(iter->current->ob->observeds, this);
+  });
   _clear_observables(this->observers);
   _debug("CLEARED OBSERVERS", this);
   return this;
