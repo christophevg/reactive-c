@@ -289,44 +289,23 @@ void _free(observable_t this) {
   free(this);
 }
 
-// check all observers and remove those that are marked for disposal
-observable_t _gc(observable_t this) {
-  _debug("GC BEFORE", this);
-  // do I _have_ any observers?
-  if(_is_empty(this->observers)) {
-    assert(this->observers->last == NULL);
-    return this;
-  }
+observable_t bin = NULL;
 
-  // yes, we have observers, check them and garbage collect disposed observers
-  observable_li_t item = this->observers->first;
+#define empty_bin() (bin == NULL)
 
-  // dispose first in observers list
-  while(item && _is_disposed(item->ob)) {
-    observable_t disposed = item->ob;
-    _remove_observable(this->observers, disposed);
-    _free(disposed);
-    item = this->observers->first;
-  }
-  // dispose inside observers list
-  if(item) {
-    item = item->next;
-    while(item) {
-      if(_is_disposed(item->ob)) {
-        observable_t disposed = item->ob;
-        item = item->next;
-        _remove_observable(this->observers, disposed);
-        _free(disposed);
-      } else {
-        item = item->next;
-      }
-    }
-  }
-
-  _debug("GC AFTER", this);
-  return this;
+void _trash(observable_t observable) {
+  observable->next = bin;
+  bin = observable;
 }
 
+void _empty_trash() {
+  while(bin) {
+    observable_t trash = bin;
+    bin = bin->next;
+    _free(trash);
+  }
+}
+  
 // update observers' arguments - probably because this' value changed location
 void _update_observers_args(observable_t this) {
   foreach(observable, this->observers, {
@@ -572,6 +551,7 @@ void dispose(observable_t this) {
   if(this->on_dispose) { 
     this->on_dispose(this);
   }
+  _trash(this);
 }
 
 // trigger for (external) update of observable
@@ -624,9 +604,6 @@ void _observe_update(observable_t this, observable_t source) {
       }
     });
   }
-
-  // perform garbage collection (on our observers)
-  _gc(this);
 }
 
 // public method can only trigger update, not be a source
@@ -643,6 +620,8 @@ void observe_update(observable_t observable) {
     _step(iter->current->ob);
   });
   _clear_observables(&scripts_waiting);
+  // empty the trash
+  _empty_trash();
 }
 
 // extract current value from this observable
