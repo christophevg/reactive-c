@@ -557,7 +557,7 @@ void _observe_update(observable_t this, observable_t source) {
   if(_is_suspended(this)) { return; }
   
   // if we have a filter, check if we want to propagate
-  if(this->validate){
+  if(this->validate && source){
     if(! this->validate(source->value) ) {
       _dont_propagate(this);
       return;
