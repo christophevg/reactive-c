@@ -32,7 +32,9 @@ void next_##type(type##_iterator_t iter) {                            \
 
 #define foreach(type, list, code) \
 {\
-type##_iterator_t iter=iterate_##type##s(list); \
-for(; more_##type##s(iter); next_##type(iter)) code; \
-free(iter);\
+  if(list != NULL) {\
+    type##_iterator_t iter=iterate_##type##s(list); \
+      for(; more_##type##s(iter); next_##type(iter)) code; \
+    free(iter);\
+  }\
 }
