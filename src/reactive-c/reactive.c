@@ -158,13 +158,12 @@ typedef struct observable {
   int            type_size;      // sizeof(typeof(value))
   observer_t     process;        // function that given input produces _____|
   observables_t  observeds;      // first of observed observables
-  unknown_t      *args;          // array of pointers to values of observeds
-  int            level;          // the level in the dependecy graph
   observables_t  observers;      // first of observers
+  unknown_t      *args;          // cached array of ptrs to values of observeds
+  int            level;          // the level in the dependecy graph
   validator_t    validate;       // validate if an update is propagated
-  // scripting support
-  observable_t   parent;
-  observable_t   next;           // if this observable is done, start the next
+  observable_t   parent;         // functional ref to "creating" observable
+  observable_t   next;           // functional ref to "next" observable
   // events
   observable_callback_t  on_dispose;
   observable_callback_t  on_activation;
