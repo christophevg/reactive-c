@@ -10,7 +10,14 @@ DOT=dot -Nfixedsize=False -Nfontname=Times-Roman -Nshape=rectangle
 
 TYPE=Release
 
+GCC=gcc-mp-4.6
+SCANBUILD=scan-build-mp-3.5 -o report
+
 all: clean run
+
+verify:
+	@(CC=${GCC} make)
+	@(${SCANBUILD} make)
 
 ${BUILD_DIR}/Makefile: ${BUILD_DIR}
 	@(${CD} $<; ${CMAKE} -DCMAKE_BUILD_TYPE=${TYPE} ../${SRC_DIR})
