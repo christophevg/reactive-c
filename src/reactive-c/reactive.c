@@ -314,11 +314,8 @@ void _update_observers_args(observable_t this) {
 // into one "merged" observable observer.
 void _merge_handler(observation_t ob) {
   observable_t this = ((participants_t)ob->observer)->target;
-  if(_is_suspended(this)) { return; }
-  if(_is_delayed(this))   { 
-    _dont_propagate(this);
-    return;
-  }
+  if(_is_delayed(this)) { return; }
+  // make sure we propagate once we're active
   _propagate(this);
 
   // redirect value to the value of the emitting merged observable
@@ -334,11 +331,7 @@ void _merge_handler(observation_t ob) {
 
 void _all_handler(observation_t ob) {
   observable_t this = (observable_t)((participants_t)ob->observer)->target;
-  if(_is_suspended(this)) { return; }
-  if(_is_delayed(this))   { 
-    _dont_propagate(this);
-    return;
-  }
+  if(_is_delayed(this)) { return; }
 
   observable_t source = (observable_t)((participants_t)ob->observer)->source;
 
@@ -365,11 +358,8 @@ void _all_handler(observation_t ob) {
 
 void _any_handler(observation_t ob) {
   observable_t this = (observable_t)((participants_t)ob->observer)->target;
-  if(_is_suspended(this)) { return; }
-  if(_is_delayed(this))   { 
-    _dont_propagate(this);
-    return;
-  }
+  if(_is_delayed(this)) { return; }
+  // as soon as we are "touched", we propagate again
   _propagate(this);
 
   _debug("FINALIZED ANY", this);
@@ -490,6 +480,7 @@ observable_t __observing(char *label, observables_t observeds,
 observable_t suspend(observable_t this) {
   if(!_is_suspended(this)) {
     this->prop |= SUSPENDED;
+    _dont_propagate(this);
     _debug("SUSPEND", this);
   }
   return this;
@@ -505,6 +496,7 @@ observable_t unsuspend(observable_t this) {
 
 observable_t delay(observable_t this) {
   this->prop |= DELAYED;
+  _dont_propagate(this);
   _debug("DELAY", this);
   return this;
 }
