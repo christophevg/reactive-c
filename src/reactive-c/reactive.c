@@ -36,8 +36,6 @@ struct observables {
   observable_li_t last;
 } observables;
 
-construct_iterator(observable)
-
 // a list of script waiting to proceed
 struct observables _scripts_waiting = { NULL, NULL };
 observables_t scripts_waiting = &_scripts_waiting;
@@ -112,9 +110,7 @@ void _clear_observables(observables_t list) {
 
 int _count_observables(observables_t list) {
   int count = 0;
-  foreach(observable, list, {
-    count++;
-  });
+  foreach(observable_li_t, _, list) { count++; }
   return count;
 }
 
@@ -180,9 +176,9 @@ void _debug_level(char* title, observable_t this, int level) {
   printf("\n");
   if(this->observeds && this->observeds) {
     printf("%*.s   observing:\n", level, "");
-    foreach(observable, this->observeds, {
-      _debug_level("   - ", iter->current->ob, level+3);
-    });
+    foreach(observable_li_t, iter, this->observeds) {
+      _debug_level("   - ", iter->ob, level+3);
+    }
   }
   if(this->next && this->parent == NULL) {
     printf("steps:\n");
@@ -226,9 +222,9 @@ observable_t _update_level(observable_t this) {
   if(this->observeds == NULL) { return this; }
   observable_li_t observed = this->observeds->first;
   int level = 0;
-  foreach(observable, this->observeds, {
-    if(iter->current->ob->level > level) { level = observed->ob->level; }
-  });
+  foreach(observable_li_t, iter, this->observeds) {
+    if(iter->ob->level > level) { level = observed->ob->level; }
+  }
   while(observed) {
     observed = observed->next;
   }
@@ -247,9 +243,9 @@ observable_t _update_args(observable_t this) {
   
   // copy pointers to values
   int i = 0;
-  foreach(observable, this->observeds, {
-    this->args[i++] = iter->current->ob->value;
-  });
+  foreach(observable_li_t, iter, this->observeds) {
+    this->args[i++] = iter->ob->value;
+  }
 
   return this;
 }
@@ -258,9 +254,9 @@ observable_t _update_args(observable_t this) {
 observable_t _clear_observers(observable_t this) {
   if(this->observers == NULL) { return this; }
   // remove back-links from our observers
-  foreach(observable, this->observers, {
-    _remove_observable(iter->current->ob->observeds, this);
-  });
+  foreach(observable_li_t, iter, this->observers) {
+    _remove_observable(iter->ob->observeds, this);
+  }
   _clear_observables(this->observers);
   _debug("CLEARED OBSERVERS", this);
   return this;
@@ -270,9 +266,9 @@ observable_t _clear_observers(observable_t this) {
 observable_t _clear_observeds(observable_t this) {
   if(this->observeds == NULL) { return this; }
   // remove back-links from our observeds
-  foreach(observable, this->observeds, {
-    _remove_observable(iter->current->ob->observers, this);
-  });
+  foreach(observable_li_t, iter, this->observeds) {
+    _remove_observable(iter->ob->observers, this);
+  }
   _clear_observables(this->observeds);
   _debug("CLEARED OBSERVEDS", this);
   return this;
@@ -306,9 +302,9 @@ void empty_trash() {
 
 // update observers' arguments - probably because this' value changed location
 void _update_observers_args(observable_t this) {
-  foreach(observable, this->observers, {
-    _update_args(iter->current->ob);
-  });
+  foreach(observable_li_t, iter, this->observers) {
+    _update_args(iter->ob);
+  }
 }
 
 // internal observer function to merge value updates to multiple observables
@@ -339,15 +335,15 @@ void _all_handler(observation_t ob) {
   // track updates by marking their link as observed
   int count   = 0;
   int observed = 0;
-  foreach(observable, this->observeds, {
-    if(iter->current->ob == source) {
+  foreach(observable_li_t, iter, this->observeds) {
+    if(iter->ob == source) {
       _debug("ALL OBSERVED UPDATE", source);
-      _mark_observed(iter->current);
+      _mark_observed(iter);
     }
     // keep stats
     count++;
-    if(_is_observed(iter->current)) { observed++; }
-  });
+    if(_is_observed(iter)) { observed++; }
+  }
     
   // have we observed all items emit updates?
   if(observed == count) {
@@ -470,9 +466,9 @@ observable_t __observing(char *label, observables_t observeds,
   _update_level(this);
 
   // step 3: add a back-link to the observer to all observeds
-  foreach(observable, this->observeds, {
-    _add_observable(iter->current->ob->observers, this);
-  });
+  foreach(observable_li_t, iter, this->observeds) {
+    _add_observable(iter->ob->observers, this);
+  }
 
   return this;
 }
@@ -515,9 +511,9 @@ observable_t start(observable_t this) {
   // step 1: cancel suspension
   unsuspend(this);
   // step 2: if we have delayed observeds, un-delay them
-  foreach(observable, this->observeds, {
-    undelay(iter->current->ob);
-  });
+  foreach(observable_li_t, iter, this->observeds) {
+    undelay(iter->ob);
+  }
   _debug("STARTED", this);
   return this;
 }
@@ -588,13 +584,13 @@ void _observe_update(observable_t this, observable_t source) {
     // dependant on us, so with level = our level + 1. those with even higher
     // levels are dependant on other levels below us and will be triggered as
     // soon as their parents all have been updated
-    foreach(observable, this->observers, {
-      if( ! _is_disposed(iter->current) ) {
-        if(iter->current->ob->level == this->level + 1) {
-          _observe_update(iter->current->ob, this);
+    foreach(observable_li_t, iter, this->observers) {
+      if( ! _is_disposed(iter) ) {
+        if(iter->ob->level == this->level + 1) {
+          _observe_update(iter->ob, this);
         }
       }
-    });
+    }
   }
 }
 
@@ -608,9 +604,9 @@ void observe_update(observable_t observable) {
   // next step, which might not what is intended.
   // At the end of an observation propagation, we proceed all scripts that are
   // marked as such.
-  foreach(observable, scripts_waiting, {
-    _step(iter->current->ob);
-  });
+  foreach(observable_li_t, iter, scripts_waiting) {
+    _step(iter->ob);
+  }
   _clear_observables(scripts_waiting);
   // empty the trash
   empty_trash();
@@ -755,15 +751,15 @@ void __to_dot(observable_t this, FILE *fp, bool show_memory, bool preamble) {
   fprintf(fp, "]\n");
 
   // observeds
-  foreach(observable, this->observeds, {
+  foreach(observable_li_t, iter, this->observeds) {
     // only generate links for observed ... not also for observers
-    if(!_is_exported(iter->current)) {
-      _mark_exported(iter->current);
-      fprintf(fp, "\"%p\" -> \"%p\"\n", (void*)this, (void*)iter->current->ob);
+    if(!_is_exported(iter)) {
+      _mark_exported(iter);
+      fprintf(fp, "\"%p\" -> \"%p\"\n", (void*)this, (void*)iter->ob);
     }
     // recurse
-    __to_dot(iter->current->ob, fp, show_memory, false);
-  });
+    __to_dot(iter->ob, fp, show_memory, false);
+  }
 
   // sequential relationships (e.g. scripts' steps)
   if(this->next) {
@@ -772,9 +768,9 @@ void __to_dot(observable_t this, FILE *fp, bool show_memory, bool preamble) {
   }
 
   // recurse observers
-  foreach(observable, this->observers, {
-    __to_dot(iter->current->ob, fp, show_memory, false);
-  });
+  foreach(observable_li_t, iter, this->observers) {
+    __to_dot(iter->ob, fp, show_memory, false);
+  }
 
   // recurse parent
   if(this->parent) {

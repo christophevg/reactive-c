@@ -18,8 +18,6 @@ typedef struct items {
   item_li_t first;
 } *items_t;
 
-construct_iterator(item);
-
 int main(void) {
   item_t i1 = malloc(sizeof(item_t));
   i1->value = 1;
@@ -43,13 +41,18 @@ int main(void) {
   items_t items = malloc(sizeof(struct items));
   items->first = li1;
 
-  foreach(item, items, {
-    printf("%d\n", iter->current->ob->value);
-  });
+  foreach(item_li_t, iter, items) {
+    printf("%d\n", iter->ob->value);
+  }
 
   free(i3);  free(i2);  free(i1);
   free(li3); free(li2); free(li1);
   free(items);
+
+  items_t empty_items = NULL;
+  foreach(item_li_t, iter, empty_items) {
+    // do nothing ;-)
+  }
 
   exit(EXIT_SUCCESS);
 }
