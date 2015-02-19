@@ -25,7 +25,7 @@ typedef struct participants {
 // observables.
 typedef struct observable_li {
   observable_t         ob;
-  int prop;
+  int                  prop;
   struct observable_li *next;
 } *observable_li_t;
 
@@ -44,36 +44,28 @@ observables_t scripts_waiting = &_scripts_waiting;
 observables_t _new_observables_list(void) {
   observables_t list = malloc(sizeof(struct observables));
   list->first = NULL;
-  list->last = NULL;
+  list->last  = NULL;
   return list;
 }
 
-#define _is_empty(list) list->first == NULL
-
 void _add_observable(observables_t list, observable_t observable) {
-  if(_is_empty(list)) {
-    assert(list->last == NULL);
-    // prepare first list item
-    list->first = malloc(sizeof(struct observable_li));
-    list->last = list->first;
-  } else {
-    // prepare next list item
-    list->last->next = malloc(sizeof(struct observable_li));
-    list->last = list->last->next;
-  }
-  list->last->ob   = observable;
-  list->last->prop = 0;
-  list->last->next = NULL;
+  observable_li_t item = malloc(sizeof(struct observable_li));
+  item->ob             = observable;
+  item->next           = NULL;
+  item->prop           = 0;
+  if(list->last != NULL) { list->last->next     = item; }
+  list->last           = item;
+  if(list->first == NULL) { list->first = item; }
 }
 
 bool _contains_observable(observables_t list, observable_t observable) {
-  observable_li_t item = list->first;
-  while(item) {
+  foreach(observable_li_t, item, list) {
     if(item->ob == observable) { return true; }
-    item = item->next;
   }
   return false;
 }
+
+#define _is_empty(list) list->first == NULL
 
 void _remove_observable(observables_t list, observable_t observable) {
   if(_is_empty(list)) {
@@ -99,12 +91,10 @@ void _remove_observable(observables_t list, observable_t observable) {
 }
 
 void _clear_observables(observables_t list) {
-  if(list == NULL) { return; }
-  while(list->first) {
-    observable_li_t item = list->first;
-    list->first = list->first->next;
+  foreach(observable_li_t, item, list) {
     free(item);
   }
+  list->first = NULL;
   list->last = list->first;
 }
 
@@ -130,6 +120,7 @@ enum properties {
 };
 
 // macro's to hide underlying bitwise operations (hey, I like "readable code")
+#define _is_value(o)          (o->prop &   VALUE)
 #define _use_participants(o)  (o->prop |=  OUT_IS_PART)
 #define _uses_participants(o) (o->prop &   OUT_IS_PART)
 #define _is_disposed(o)       (o->prop &   DISPOSED)
@@ -142,6 +133,7 @@ enum properties {
 #define _mark_exported(o)     (o->prop |=  EXPORTED)
 #define _is_exported(o)       (o->prop &   EXPORTED)
 #define _is_observed(o)       (o->prop &   OBSERVED)
+#define _is_script(o)         (o->next && o->parent == NULL)
 
 // structure of observable is private
 typedef struct observable {
@@ -180,7 +172,7 @@ void _debug_level(char* title, observable_t this, int level) {
       _debug_level("   - ", iter->ob, level+3);
     }
   }
-  if(this->next && this->parent == NULL) {
+  if(_is_script(this)) {
     printf("steps:\n");
     observable_t step = this->next;
     int c = 1;
@@ -219,14 +211,9 @@ observable_t _new(char *label) {
 // recompute the level for this observable. do this by computing the maximum
 // level for all observed observables + 1
 observable_t _update_level(observable_t this) {
-  if(this->observeds == NULL) { return this; }
-  observable_li_t observed = this->observeds->first;
   int level = 0;
   foreach(observable_li_t, iter, this->observeds) {
-    if(iter->ob->level > level) { level = observed->ob->level; }
-  }
-  while(observed) {
-    observed = observed->next;
+    if(iter->ob->level > level) { level = iter->ob->level; }
   }
   this->level = level + 1;
   return this;
@@ -252,7 +239,6 @@ observable_t _update_args(observable_t this) {
 
 // remove all links to observers
 observable_t _clear_observers(observable_t this) {
-  if(this->observers == NULL) { return this; }
   // remove back-links from our observers
   foreach(observable_li_t, iter, this->observers) {
     _remove_observable(iter->ob->observeds, this);
@@ -264,7 +250,6 @@ observable_t _clear_observers(observable_t this) {
 
 // remove all links to observed observables
 observable_t _clear_observeds(observable_t this) {
-  if(this->observeds == NULL) { return this; }
   // remove back-links from our observeds
   foreach(observable_li_t, iter, this->observeds) {
     _remove_observable(iter->ob->observers, this);
@@ -281,22 +266,23 @@ void _free(observable_t this) {
   _clear_observers(this); free(this->observers);
   if(this->observeds) { _clear_observeds(this); free(this->observeds); }
   if(this->args)  { free(this->args);  this->args  = NULL; }
-  if(!this->prop & VALUE && this->value) { free(this->value); this->value = NULL; }
+  if(!_is_value(this) && this->value) { free(this->value); this->value = NULL; }
   free(this);
 }
 
-observable_t bin = NULL;
+// the trash is another list of observables
+struct observables _bin = { NULL, NULL };
+observables_t bin = &_bin;
 
-void _trash(observable_t observable) {
-  observable->next = bin;
-  bin = observable;
-}
+// add an observable to the trash
+#define _trash(o) _add_observable(bin, o)
 
+// actually free all observables in the bin
 void empty_trash() {
-  while(bin) {
-    observable_t trash = bin;
-    bin = bin->next;
-    _free(trash);
+  foreach(observable_li_t, item, bin) {
+    observable_t observable = item->ob;
+    _remove_observable(bin, observable);
+    _free(observable);
   }
 }
 
