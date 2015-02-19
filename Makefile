@@ -20,15 +20,21 @@ RED   = \033[0;31m
 GREEN = \033[0;32m
 NC  	= \033[0m 		# NoColor
 
-verify:
+verify: gcc valgrind scan-build
+
+gcc:
 	@echo "${RED}*** Verifying GCC...${NC}"
 	@printf "${GREEN}press any key to start..${NC}"
 	@read
 	@(CC=${GCC} make TYPE=Debug)
+
+valgrind: bin/await
 	@echo "${RED}*** Verifying memory aspects using Valgrind...${NC}"
 	@printf "${GREEN}press any key to continue..${NC}"
 	@read
 	@(${VALGRIND} bin/await)
+
+scan-build:
 	@echo "${RED}*** Verifying static code using scan-build...${NC}"
 	@printf "${GREEN}press any key to continue..${NC}"
 	@read
