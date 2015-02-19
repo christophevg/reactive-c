@@ -91,6 +91,7 @@ void _remove_observable(observables_t list, observable_t observable) {
 }
 
 void _clear_observables(observables_t list) {
+  if(list == NULL) { return; }
   foreach(observable_li_t, item, list) {
     free(item);
   }
