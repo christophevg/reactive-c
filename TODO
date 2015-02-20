@@ -1,10 +1,12 @@
 TODO
+- introduce emit() + fix script to be real observable
+- introduce script looping (e.g reintroduce resuspended observable)
+- introduce (push/)pull strategy
+  - on whole graph or on more fine-grained basis (observable,links)?
 - can do_#type() trick be applied to more? (cfr fold)
 - implement loop-detection
-- introduce time
-- introduce timeout
-- introduce sample?
+  - probably only warning, loops are valid (e.g. controller/feedback loop)
+- introduce time, timeout
+- introduce sample (can this be a script?)
 - improve garbage collection (freeing of observable_lists)
-- introduce emit() + fix script
-
 - make execution of observe_update async -> really needed?
