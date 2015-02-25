@@ -1,4 +1,8 @@
 TODO
+- introduce actual test harness with actual unit tests ;-)
+- document using Doxygen
+- check coverage
+- stop hiding internals of the observable structure
 - introduce emit() + fix script to be real observable
 - introduce script looping (e.g reintroduce resuspended observable)
 - introduce (push/)pull strategy
