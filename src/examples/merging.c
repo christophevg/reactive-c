@@ -5,7 +5,7 @@
 
 #include "unit/test.h"
 
-#include "reactive-c/reactive.h"
+#include "reactive-c/api.h"
 
 void display(observation_t ob) {
   capture_printf("current value = value: %f\n", *(double*)(ob->observeds[0]));

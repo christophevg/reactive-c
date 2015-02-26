@@ -3,7 +3,7 @@
 
 #include "unit/test.h"
 
-#include "reactive-c/reactive.h"
+#include "reactive-c/api.h"
 
 int main(void) {
   int    _a = 0;

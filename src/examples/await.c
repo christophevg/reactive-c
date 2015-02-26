@@ -2,7 +2,7 @@
 
 #include "unit/test.h"
 
-#include "reactive-c/reactive.h"
+#include "reactive-c/api.h"
 
 // helper functionality to track steps of the script
 int steps = 0;
@@ -83,7 +83,7 @@ int main(void) {
   dispose(b);
   dispose(c);
 
-  empty_trash();
+  stop_observing();
 
   exit(EXIT_SUCCESS);
 }

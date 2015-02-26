@@ -26,6 +26,22 @@ The questions this experiment wants to answer are "_Can the concepts of RP be ap
 
 Using different examples, some of the RP concepts are implemented in pure C. Given the nature of C, some compromises have to be made and certain aspects of RP require creative solutions. At the end, a more elaborate example will be implemented and evaluated against an implementation using "basic" observers.
 
+### Disclaimer
+
+1. This is an _experiment_, so the code is not to be considered stable ... until I state otherwise :-)
+2. I probably violate many C best practices with respect to naming conventions, C idoms,... At this point the goal justifies the means and I'm trying to create some sort of internal DSL, using every macro-expansion trick I can find to achieve this.
+3. The internet/Google is often my teacher, so if you think I used something you should be credited for, let me know, I have no intention to steal from you or disrespect your work in any way. I try to add references to my sources as much as I can.
+
+## Getting Started
+
+Rule of thumb for now: Take a look at the examples, which are also discussed below. 
+
+Everything starts with ...
+
+```c
+#include "reactive-c/api.h"
+```
+
 ## Examples
 
 Each of the following examples introduces an aspect of RP and its implementation in the context of Reactive C.

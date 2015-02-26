@@ -1,19 +1,31 @@
 project (reactive)
 cmake_minimum_required(VERSION 2.4)
 
-SET(LIBS "reactive-c/reactive.c" "unit/test.c" "unknown/unknown.c")
+file(GLOB REACTIVE_LIBS reactive-c/*.c)
+SET(LIBS ${REACTIVE_LIBS} "unit/test.c" "unknown/unknown.c")
 
-message("CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}")
-message("CMAKE_CXX_FLAGS_DEBUG is ${CMAKE_CXX_FLAGS_DEBUG}")
-message("CMAKE_CXX_FLAGS_RELEASE is ${CMAKE_CXX_FLAGS_RELEASE}")
+message(STATUS "Build Configuration Summary:")
+message(STATUS "  CMAKE_BUILD_TYPE        : ${CMAKE_BUILD_TYPE}")
+message(STATUS "  CMAKE_CXX_FLAGS_DEBUG   : ${CMAKE_CXX_FLAGS_DEBUG}")
+message(STATUS "  CMAKE_CXX_FLAGS_RELEASE : ${CMAKE_CXX_FLAGS_RELEASE}")
 
 # ok for clang and gcc, good enough for now
 add_compile_options(-std=c99)
 add_compile_options(-Wall)
 add_compile_options(-pedantic)
 
-# top-level target, run-targets for each executable are added below
-add_custom_target(run)
+# we're using GLib for its test harness
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GLIB2 REQUIRED glib-2.0)
+include_directories(${GLIB2_INCLUDE_DIRS})
+link_directories(${GLIB2_LIBRARY_DIRS})
+
+include_directories(.)
+
+# EXAMPLES
+
+# top-level run-target, run-targets for each executable are added below
+add_custom_target(examples)
 
 SET(ALL_EXECUTABLES)
 macro(add_executable name)
@@ -26,13 +38,32 @@ macro(add_executable name)
     WORKING_DIRECTORY ${CMAKE_PROJECT_DIR}
   )
   # and make it a dependency of the generic run target
-  add_dependencies(run "run_${name}")
+  add_dependencies(examples "run_${name}")
 endmacro()
 
 # create executables of all example files in the current directory
-file(GLOB EXAMPLES *.c)
+file(GLOB EXAMPLES examples/*.c)
 foreach(example ${EXAMPLES})
   message(STATUS "Adding example ${example}")
   get_filename_component(name ${example} NAME_WE)
   add_executable(${name} ${example} ${LIBS})
 endforeach()
+
+enable_testing()
+
+# TESTING
+
+add_custom_target(build-test)
+
+# create executables of all example files in the current directory
+file(GLOB TESTS test/*.c)
+foreach(test ${TESTS})
+  message(STATUS "Adding test ${test}")
+  get_filename_component(name ${test} NAME_WE)
+  add_executable(${name} ${test} ${LIBS})
+  target_link_libraries(${name} ${GLIB2_LIBRARIES})
+  add_test(NAME ${name} COMMAND ${name})
+  add_dependencies(build-test ${name})
+endforeach()
+
+

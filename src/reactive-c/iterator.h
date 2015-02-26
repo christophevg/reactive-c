@@ -6,6 +6,8 @@
 // - NULL terminated
 // the implementation is protected against removal of the iterated item
 
+#include <stdlib.h>
+
 #define foreach(type, item, list) \
     for(type item = (list? list->first: NULL), \
             _next = (item? item->next : NULL); \

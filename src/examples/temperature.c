@@ -8,7 +8,7 @@
 
 #include "unit/test.h"
 
-#include "reactive-c/reactive.h"
+#include "reactive-c/api.h"
 
 // to observe a value/variable...
 double temp = 123;

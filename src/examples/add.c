@@ -4,7 +4,7 @@
 
 #include "unit/test.h"
 
-#include "reactive-c/reactive.h"
+#include "reactive-c/api.h"
 
 void _addi(observation_t ob) {
   (*(int*)ob->observer) =

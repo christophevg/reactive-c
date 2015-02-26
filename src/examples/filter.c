@@ -5,7 +5,7 @@
 
 #include "unit/test.h"
 
-#include "reactive-c/reactive.h"
+#include "reactive-c/api.h"
 
 bool odd(unknown_t value) {
   return *(int*)value % 2 != 0;

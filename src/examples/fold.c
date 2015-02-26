@@ -5,7 +5,7 @@
 
 #include "unit/test.h"
 
-#include "reactive-c/reactive.h"
+#include "reactive-c/api.h"
 
 void fold_sum(observation_t ob) {
   *((int*)ob->observer) += *((int*)ob->observeds[0]);

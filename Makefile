@@ -14,7 +14,7 @@ GCC=gcc-mp-4.6
 VALGRIND=valgrind --track-origins=yes --leak-check=full --show-leak-kinds=all
 SCANBUILD=scan-build-mp-3.5 -o report
 
-all: clean run
+all: clean test examples
 
 RED   = \033[0;31m
 GREEN = \033[0;32m
@@ -46,8 +46,14 @@ ${BUILD_DIR}/Makefile: ${BUILD_DIR}
 build: ${BUILD_DIR}/Makefile
 	@(${CD} ${BUILD_DIR}; ${MAKE})
 
-run: build
-	@(${CD} ${BUILD_DIR}; ${MAKE} run)
+examples: build
+	@(${CD} ${BUILD_DIR}; ${MAKE} examples)
+
+build-test: ${BUILD_DIR}/Makefile
+	@(${CD} ${BUILD_DIR}; ${MAKE} build-test)
+
+test: build-test
+	@(${CD} ${BUILD_DIR}; ${MAKE} test)
 
 images/await.png: bin/await.dot
 	@${MKDIR} images

@@ -1,7 +1,7 @@
 #ifndef __VARARGS_H
 #define __VARARGS_H
 
-// marco's to allow each(...) to be expanded to __each(int,...)
+// marco's to count __VA_ARGS__
 // via: https://groups.google.com/forum/#!topic/comp.std.c/d-6Mj5Lko_s
 
 #define _NARG(...) \

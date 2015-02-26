@@ -4,7 +4,7 @@
 
 #include "unit/test.h"
 
-#include "reactive-c/reactive.h"
+#include "reactive-c/api.h"
 
 // "a" function taking two integers and returning an int
 int add(int a, int b) {
