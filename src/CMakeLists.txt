@@ -54,6 +54,7 @@ enable_testing()
 # TESTING
 
 add_custom_target(build-test)
+SET(ENV{CTEST_OUTPUT_ON_FAILURE} TRUE)
 
 # create executables of all example files in the current directory
 file(GLOB TESTS test/*.c)
@@ -66,4 +67,7 @@ foreach(test ${TESTS})
   add_dependencies(build-test ${name})
 endforeach()
 
+add_custom_target(check
+  COMMAND ${CMAKE_CTEST_COMMAND} --force-new-ctest-process --verbose
+)
 

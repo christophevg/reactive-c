@@ -53,7 +53,7 @@ build-test: ${BUILD_DIR}/Makefile
 	@(${CD} ${BUILD_DIR}; ${MAKE} build-test)
 
 test: build-test
-	@(${CD} ${BUILD_DIR}; ${MAKE} test)
+	@(${CD} ${BUILD_DIR}; ${MAKE} check)
 
 images/await.png: bin/await.dot
 	@${MKDIR} images

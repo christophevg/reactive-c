@@ -1,7 +1,7 @@
 TODO
 
 - structural
-  - introduce actual test harness with actual unit tests ;-)
+  - add more tests
   - document using Doxygen
   - check coverage
   - add profiling
