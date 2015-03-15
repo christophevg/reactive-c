@@ -2,7 +2,7 @@ project (reactive)
 cmake_minimum_required(VERSION 2.4)
 
 file(GLOB REACTIVE_LIBS reactive-c/*.c)
-SET(LIBS ${REACTIVE_LIBS} "unit/test.c" "unknown/unknown.c")
+SET(LIBS ${REACTIVE_LIBS} "unit/test.c" "unknown/unknown.c" "lib/time.c")
 
 message(STATUS "Build Configuration Summary:")
 message(STATUS "  CMAKE_BUILD_TYPE        : ${CMAKE_BUILD_TYPE}")
@@ -27,10 +27,12 @@ include_directories(.)
 # top-level run-target, run-targets for each executable are added below
 add_custom_target(examples)
 
-SET(ALL_EXECUTABLES)
-macro(add_executable name)
-  _add_executable(${ARGV})
-  # create a run_<executable> target for each executable
+# create executables of all example files in the current directory
+file(GLOB EXAMPLES examples/*.c)
+foreach(example ${EXAMPLES})
+  message(STATUS "Adding example ${example}")
+  get_filename_component(name ${example} NAME_WE)
+  add_executable(${name} ${example} ${LIBS})
   add_custom_target(run_${name}
     DEPENDS ${name}
     COMMENT "Running ${name}..."
@@ -39,14 +41,6 @@ macro(add_executable name)
   )
   # and make it a dependency of the generic run target
   add_dependencies(examples "run_${name}")
-endmacro()
-
-# create executables of all example files in the current directory
-file(GLOB EXAMPLES examples/*.c)
-foreach(example ${EXAMPLES})
-  message(STATUS "Adding example ${example}")
-  get_filename_component(name ${example} NAME_WE)
-  add_executable(${name} ${example} ${LIBS})
 endforeach()
 
 enable_testing()
@@ -71,3 +65,22 @@ add_custom_target(check
   COMMAND ${CMAKE_CTEST_COMMAND} --force-new-ctest-process --verbose
 )
 
+# PERFORMANCE
+
+add_custom_target(perf)
+
+file(GLOB PERF_TESTS performance/*.c)
+foreach(perf ${PERF_TESTS})
+  message(STATUS "Adding performance test ${perf}")
+  get_filename_component(name ${perf} NAME_WE)
+  add_executable(${name} ${perf} ${LIBS})
+  target_link_libraries(${name} ${GLIB2_LIBRARIES})
+  add_custom_target(run_${name}
+    DEPENDS ${name}
+    COMMENT "Running performance test ${name}..."
+    COMMAND ${name}
+    WORKING_DIRECTORY ${CMAKE_PROJECT_DIR}
+  )
+  # and make it a dependency of the generic run target
+  add_dependencies(perf "run_${name}")
+endforeach()

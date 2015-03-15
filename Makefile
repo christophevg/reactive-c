@@ -55,6 +55,9 @@ build-test: ${BUILD_DIR}/Makefile
 test: build-test
 	@(${CD} ${BUILD_DIR}; ${MAKE} check)
 
+perf: ${BUILD_DIR}/Makefile
+	@(${CD} ${BUILD_DIR}; ${MAKE} perf)
+
 images/await.png: bin/await.dot
 	@${MKDIR} images
 	@${DOT} -Tpng -Gsize=5.5,5.5\! -Gdpi=100 -o $@ $<
