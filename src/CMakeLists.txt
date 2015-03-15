@@ -14,6 +14,10 @@ add_compile_options(-std=c99)
 add_compile_options(-Wall)
 add_compile_options(-pedantic)
 
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+  add_compile_options(-lrt)
+endif()
+
 # we're using GLib for its test harness
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GLIB2 REQUIRED glib-2.0)

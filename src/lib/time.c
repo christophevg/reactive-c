@@ -18,7 +18,7 @@ struct timespec now() {
   ts.tv_sec = mts.tv_sec;
   ts.tv_nsec = mts.tv_nsec;
 #else
-  
+  clock_gettime(CLOCK_REALTIME, &ts);
 #endif
   return ts;
 }
