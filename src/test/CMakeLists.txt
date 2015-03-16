@@ -5,7 +5,9 @@ enable_testing()
 cmake_policy(SET CMP0003 OLD)
 cmake_policy(SET CMP0023 OLD)
 
-add_custom_target(build-test)
+add_custom_target(check
+  COMMAND ${CMAKE_CTEST_COMMAND} --force-new-ctest-process --verbose
+)
 SET(ENV{CTEST_OUTPUT_ON_FAILURE} TRUE)
 
 # create executables of all example files in the current directory
@@ -17,9 +19,6 @@ foreach(test ${TESTS})
   target_link_libraries(${name} LINK_PUBLIC reactive-c)
   target_link_libraries(${name} ${GLIB2_LIBRARIES})
   add_test(NAME ${name} COMMAND ${name})
-  add_dependencies(build-test ${name})
+  add_dependencies(check ${name})
 endforeach()
 
-add_custom_target(check
-  COMMAND ${CMAKE_CTEST_COMMAND} --force-new-ctest-process --verbose
-)
