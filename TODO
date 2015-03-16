@@ -17,3 +17,6 @@ TODO
   - introduce time, timeout
   - introduce sample (can this be a script?)
   - make execution of observe_update async -> really needed?
+
+- technical
+  - fix clock support on Linux
