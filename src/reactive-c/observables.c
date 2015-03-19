@@ -98,6 +98,5 @@ int observables_count(observables_t list) {
 // generic constructor for observables that observe a set of observables
 observable_t _combine(char *label, observables_t observeds, observer_t handler) {
   observable_t combination = start(__observing(label, observeds, handler, 0));
-  _use_participants(combination);
   return combination;
 }

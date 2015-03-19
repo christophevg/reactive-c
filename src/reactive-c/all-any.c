@@ -7,17 +7,14 @@
 #include "debug.h"
 
 void _all_handler(observation_t ob) {
-  observable_t this = (observable_t)((participants_t)ob->observer)->target;
-  if(_is_delayed(this)) { return; }
-
-  observable_t source = (observable_t)((participants_t)ob->observer)->source;
+  if(_is_delayed(ob->self)) { return; }
 
   // track updates by marking their link as observed
   int count   = 0;
   int observed = 0;
-  foreach(observable_li_t, iter, this->observeds) {
-    if(iter->ob == source) {
-      _debug("ALL OBSERVED UPDATE", source);
+  foreach(observable_li_t, iter, ob->self->observeds) {
+    if(iter->ob == ob->source) {
+      _debug("ALL OBSERVED UPDATE", ob->source);
       _mark_observed(iter);
     }
     // keep stats
@@ -27,9 +24,9 @@ void _all_handler(observation_t ob) {
     
   // have we observed all items emit updates?
   if(observed == count) {
-    _propagate(this);
-    _debug("FINALIZED ALL", this);
-    dispose(this);
+    _propagate(ob->self);
+    _debug("FINALIZED ALL", ob->self);
+    dispose(ob->self);
   }
 }
 
@@ -40,16 +37,15 @@ observable_t __all(char *label, observables_t observeds) {
 }
 
 void _any_handler(observation_t ob) {
-  observable_t this = (observable_t)((participants_t)ob->observer)->target;
-  if(_is_delayed(this)) { return; }
+  if(_is_delayed(ob->self)) { return; }
   // as soon as we are "touched", we propagate again
-  _propagate(this);
+  _propagate(ob->self);
 
-  _debug("FINALIZED ANY", this);
+  _debug("FINALIZED ANY", ob->self);
 
   // any hit is ok, we dispose ourselves and will be cleaned up by one of our
   // observeds when its done with us. in the meantime, we'll ignore more updates
-  dispose(this);
+  dispose(ob->self);
 }
 
 observable_t __any(char *label, observables_t observeds) {

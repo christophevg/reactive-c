@@ -8,7 +8,6 @@
 
 void _debug_level(char* title, observable_t this, int level) {
   printf("%*s: %s (%p) prop:", level, title, this->label, (void*)this);
-  if(_uses_participants(this)) { printf(" participants"); }
   if(_is_disposed(this))       { printf(" disposed"); }
   if(_is_suspended(this))      { printf(" suspended"); }
   if(_is_delayed(this))        { printf(" delayed"); }

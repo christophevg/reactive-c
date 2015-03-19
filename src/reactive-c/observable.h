@@ -12,6 +12,7 @@ typedef struct observable *observable_t;
 // 1. an array of pointers to the values of the observed observables.
 // 2. a pointer to the location of the resulting observing value
 typedef struct observation {
+  observable_t source, self;
   unknown_t *observeds;
   unknown_t observer;
 } *observation_t;

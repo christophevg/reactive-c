@@ -251,13 +251,12 @@ void _observe_update(observable_t this, observable_t source) {
   // if we have a process execute it (IF WE'RE NOT OUR OWN SOURCE)
   if(this->process && this != source) {
     // do we pass the value or the object itself?
-    struct observation ob = { .observeds = this->args };
-    if(_uses_participants(this)) {
-      struct participants participants = {.source = source, .target=this};
-      ob.observer = (unknown_t)&participants;
-    } else {
-      ob.observer = (unknown_t)this->value;
-    }
+    struct observation ob = {
+      .self       = this,
+      .source     = source,
+      .observeds  = this->args,
+      ob.observer = this->value
+    };
     this->process(&ob);
   }
 

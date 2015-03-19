@@ -103,22 +103,21 @@ observable_t _proceed(observable_t script) {
 }
 
 void _finalize_await(observation_t ob) {
-  observable_t this = (observable_t)((participants_t)ob->observer)->target;
-  _debug("FINALIZE AWAIT", this);
+  _debug("FINALIZE AWAIT", ob->self);
 
-  if(_is_suspended(this)) { return; }
+  if(_is_suspended(ob->self)) { return; }
 
   // dispose ourselves
-  dispose(this);
+  dispose(ob->self);
 
   // tell the script to move to the next step
-  _proceed(this->parent);
+  _proceed(ob->self->parent);
 }
 
 // constructor for observer that wait until another observer emits
 observable_t await(observable_t observable) {
-  observable_t this = __observing("await", just(observable), _finalize_await, 0);
-  _use_participants(this);
+  observable_t this = 
+    __observing("await", just(observable), _finalize_await, 0);
   _debug("AWAIT", this);
   return suspended(this);
 }
