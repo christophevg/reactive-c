@@ -49,6 +49,9 @@ test: cmake
 perf: cmake
 	@(${CD} ${BUILD_DIR}; ${MAKE} perf)
 
+run_%: ${BUILD_DIR}/Makefile
+	@(cd ${BUILD_DIR}/; make $@ )
+
 cmake: ${BUILD_DIR}/Makefile
 
 ${BUILD_DIR}/Makefile: ${BUILD_DIR}
