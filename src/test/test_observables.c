@@ -26,7 +26,7 @@ void teardown(observables_f *ob, gconstpointer _) {
 void test_add(observables_f *ob, gconstpointer _) {
   g_assert(observables_is_empty(ob->list));
   int _d = 123;
-  observable_t dummy = observe(int, _d);
+  observable_t dummy = observe(_d);
   observables_add(ob->list, dummy);
   g_assert(! observables_is_empty(ob->list));
   g_assert(observables_count(ob->list) == 1);
@@ -39,9 +39,9 @@ void setup_list_with_three_observable(observables_f *ob, gconstpointer _) {
   ob->_b = 2;
   ob->_c = 3;
 
-  ob->a = observe(int, ob->_a);
-  ob->b = observe(int, ob->_b);
-  ob->c = observe(int, ob->_c);
+  ob->a = observe(ob->_a);
+  ob->b = observe(ob->_b);
+  ob->c = observe(ob->_c);
   
   observables_add(ob->list, ob->a);
   observables_add(ob->list, ob->b);
@@ -72,7 +72,7 @@ void test_contains(observables_f *ob, gconstpointer _) {
   g_assert(observables_contains(ob->list, ob->b));
   g_assert(observables_contains(ob->list, ob->c));
   int _u = 123;
-  observable_t unknown = observe(int, _u);
+  observable_t unknown = observe(_u);
   g_assert( ! observables_contains(ob->list, unknown));
 }
 

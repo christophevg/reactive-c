@@ -16,7 +16,7 @@ void id(observation_t ob) {
 int main(void) {
   // source
   int _a = 0;
-  observable_t source = observe(int, _a);
+  observable_t source = observe(_a);
   
   // now chain 100 observers
   observable_t tail = source;

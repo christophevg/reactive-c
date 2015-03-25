@@ -16,6 +16,6 @@ void __to_dot(observable_t, FILE*, bool, bool);
 #define __dx(_1, _2, _3, NAME,...) NAME
 
 // actual public API
-#define to_dot(...) __dx(__VA_ARGS__, __d3, __d2, __d1)(__VA_ARGS__)
+#define to_dot(...) __dx(__VA_ARGS__, __d3, __d2, __d1, 0)(__VA_ARGS__)
 
 #endif

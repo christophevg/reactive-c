@@ -64,11 +64,11 @@ typedef bool(*validator_t)(unknown_t);
 void stop_observing(void);
 
 // overloaded constructor for creating observables
-#define __o2(t,v)     __observing_value(#v,(void*)&v,sizeof(t))
+#define __o1(v)       __observing_value(#v,(void*)&v,sizeof(v))
 #define __o3(l,o,t)   __observing(#l,l,o,sizeof(t))
 #define __o4(l,o,t,s) __observing(#l,l,o,sizeof(t)*s)
 #define __ox(_1,_2,_3,_4,NAME,...) NAME
-#define observing(...) __ox(__VA_ARGS__, __o4, __o3, __o2, __o1)(__VA_ARGS__)
+#define observing(...) __ox(__VA_ARGS__, __o4, __o3, __o2, __o1, 0)(__VA_ARGS__)
 
 // helper macro to combine creation and activation
 #define observe(...) start(observing(__VA_ARGS__))

@@ -9,8 +9,8 @@ int main(void) {
   int    _a = 0;
   double _b = 0;
   
-  observable_t a = observe(int,    _a);
-  observable_t b = observe(double, _b);
+  observable_t a = observe(_a);
+  observable_t b = observe(_b);
 
   assert_equal(_a, 0, "a should be 0\n");
   assert_equal(_b, 0, "b should be 0\n");

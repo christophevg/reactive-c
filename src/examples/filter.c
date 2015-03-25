@@ -13,7 +13,7 @@ bool odd(unknown_t value) {
 
 int main(void) {
   int _var1;
-  observable_t var1 = observe(int, _var1);
+  observable_t var1 = observe(_var1);
 
   observable_t filtered = filter(int, var1, odd);
 

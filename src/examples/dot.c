@@ -6,9 +6,9 @@
 int main(void) {
   int _a = 0, _b = 0, _c = 0;
   
-  observable_t a = observe(int, _a);
-  observable_t b = observe(int, _b);
-  observable_t c = observe(int, _c);
+  observable_t a = observe(_a);
+  observable_t b = observe(_b);
+  observable_t c = observe(_c);
 
   script(
     await(a),

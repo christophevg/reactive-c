@@ -7,8 +7,8 @@
 int main(void) {
   int _a = 0, _b = 0;
   
-  observable_t a = observe(int, _a);
-  observable_t b = observe(int, _b);
+  observable_t a = observe(_a);
+  observable_t b = observe(_b);
 
   observable_t s = 
     script(

@@ -13,7 +13,7 @@ void fold_sum(observation_t ob) {
 
 int main(void) {
   int _var1;
-  observable_t var1 = observe(int, _var1);
+  observable_t var1 = observe(_var1);
 
   observable_t folded = fold(var1, fold_sum, int, 3);
 

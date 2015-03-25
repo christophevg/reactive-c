@@ -58,7 +58,7 @@ double temp = 123;
 observable_t observable_temp;
 
 void temp_init() {
-  observable_temp = observe(double, temp);
+  observable_temp = observe(temp);
 }
 
 void temp_update(double update) {
@@ -67,7 +67,7 @@ void temp_update(double update) {
 }
 ```
 
-Given this basic observable, we can now observe it using an observer (function). We again use the `observe` constructor. This time we don't provide a reference to a variable, but provide it a list of observables, an observer function and the type of the output of that observer (function).
+Given this basic observable, we can now observe it using an observer (function). We again use the `observe` constructor. This time we don't provide a (reference to) a variable, but provide it a list of observables, an observer function and the type of the output of that observer (function).
 
 **Compromise #1**: C is statically typed. This means that an observer function also needs to be statically typed. To allow any kind of arguments and result, we need to resort to `void*` (which we also define as `unknown_t`) and **explicit casts** whenever we want to access these values.
 
@@ -211,7 +211,7 @@ void fold_sum(observation_t ob) {
 
 int main(void) {
   int _var1;
-  observable_t var1 = observe(int, _var1);
+  observable_t var1 = observe(_var1);
 
   observable_t folded = fold(var1, fold_sum, int, 3);
 
@@ -240,8 +240,8 @@ observable_t addi(observable_t a, observable_t b) {
 int main(void) {
   int _var1, _var2;
   
-  observable_t var1 = observe(int, _var1);
-  observable_t var2 = observe(int, _var2);
+  observable_t var1 = observe(_var1);
+  observable_t var2 = observe(_var2);
   
   observable_t var3 = addi(var1, var2);
 
@@ -267,8 +267,8 @@ lift2(int, add)
 int main(void) {
   int _var1, _var2;
   
-  observable_t var1 = observe(int, _var1);
-  observable_t var2 = observe(int, _var2);
+  observable_t var1 = observe(_var1);
+  observable_t var2 = observe(_var2);
   
   observable_t var3 = observe(both(var1, var2), lifted(add), int);
 
@@ -299,8 +299,8 @@ One of the objections made by RP is that of the inherent inversion of control ef
 int main(void) {
   int _a = 0, _b = 0;
   
-  observable_t a = observe(int, _a);
-  observable_t b = observe(int, _b);
+  observable_t a = observe(_a);
+  observable_t b = observe(_b);
   
   run(
     script(
@@ -367,8 +367,8 @@ Observables deal with values in _generic_ way, using the `unknown_t` type, which
 ```c
   int _a = 3,
       _b = 0;
-  observable_t a = observe(int, _a);
-  observable_t b = observe(int, _b);
+  observable_t a = observe(_a);
+  observable_t b = observe(_b);
 
   observable_value_copy(a, b);        // _b == 3 too now
 ```
@@ -377,7 +377,7 @@ The underlying principle (aka `memcpy`) also allows for the implementation of a 
 
 ```c
   int _a = 0;
-  observable_t a = observe(int, _a);
+  observable_t a = observe(_a);
   set(int, a, 3);                     // _a == 3 now
 ```
 
@@ -394,7 +394,7 @@ bool odd(unknown_t value) {
 
 int main(void) {
   int _var1;
-  observable_t var1 = observe(int, _var1);
+  observable_t var1 = observe(_var1);
 
   observable_t filtered = filter(int, var1, odd);
 

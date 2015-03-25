@@ -15,9 +15,9 @@ int main(void) {
   double _a, _b, _c;
   
   // create three basic observers
-  observable_t a = observe(double, _a);
-  observable_t b = observe(double, _b);
-  observable_t c = observe(double, _c);
+  observable_t a = observe(_a);
+  observable_t b = observe(_b);
+  observable_t c = observe(_c);
 
   // create one that merges all three
   observable_t abc = merge(a, b, c);

@@ -18,7 +18,7 @@ observable_t observable_temp;
 
 // ... and link it to the value/variable.
 void observable_temp_init() {
-  observable_temp = observe(double, temp);
+  observable_temp = observe(temp);
 }
 
 // when the value/variable is updated, we trigger the RP functionality

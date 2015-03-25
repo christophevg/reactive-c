@@ -20,7 +20,7 @@ int main(void) {
   double _a;
   
   // observer a value
-  observable_t a = observe(int, _a);
+  observable_t a = observe(_a);
 
   // map the observed value to something else
   observable_t A = map(a, double2string, char, 10);
