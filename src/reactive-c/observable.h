@@ -65,6 +65,7 @@ void stop_observing(void);
 
 // overloaded constructor for creating observables
 #define __o1(v)       __observing_value(#v,(void*)&v,sizeof(v))
+#define __o2(t,v)     __observing_value(#v,(void*)&v,sizeof(t))
 #define __o3(l,o,t)   __observing(#l,l,o,sizeof(t))
 #define __o4(l,o,t,s) __observing(#l,l,o,sizeof(t)*s)
 #define __ox(_1,_2,_3,_4,NAME,...) NAME
