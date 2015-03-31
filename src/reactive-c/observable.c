@@ -143,7 +143,6 @@ observable_t __observing(char *label, observables_t observeds,
   this->value       = size ? (unknown_t)malloc(size) : NULL;
   this->type_size   = size;
   this->process     = observer;
-  free(this->observeds); // else double allocation - thank you valgrind ;-)
   this->observeds   = observeds;    // this is already partial in the graph
                                     // but cannot be used, no back-links
 
