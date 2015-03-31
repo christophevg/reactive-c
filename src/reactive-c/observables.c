@@ -46,6 +46,14 @@ void observables_add(observables_t list, observable_t observable) {
   if(list->first == NULL) { list->first = item; }
 }
 
+observables_t observables_dup(observables_t originals) {
+  observables_t list = observables_new();
+  foreach(observable_li_t, original, originals) {
+    observables_add(list, original->ob);
+  }
+  return list;
+}
+
 void observables_remove(observables_t list, observable_t observable) {
   if(observables_is_empty(list)) {
     assert(list->last == NULL);

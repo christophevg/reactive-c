@@ -76,6 +76,13 @@ void test_contains(observables_f *ob, gconstpointer _) {
   g_assert( ! observables_contains(ob->list, unknown));
 }
 
+void test_dup(observables_f *ob, gconstpointer _) {
+  observables_t dup = observables_dup(ob->list);
+  g_assert(observables_contains(dup, ob->a));
+  g_assert(observables_contains(dup, ob->b));
+  g_assert(observables_contains(dup, ob->c));
+}
+
 int main(int argc, char **argv) {
   g_test_init(&argc, &argv, NULL);
   
@@ -87,6 +94,8 @@ int main(int argc, char **argv) {
              setup_list_with_three_observable, test_clear, teardown );
   g_test_add("/observables/contains", observables_f, NULL,
              setup_list_with_three_observable, test_contains, teardown );
+  g_test_add("/observables/dup", observables_f, NULL,
+             setup_list_with_three_observable, test_dup, teardown );
 
   return g_test_run();
 }
