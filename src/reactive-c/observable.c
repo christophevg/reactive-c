@@ -137,14 +137,23 @@ observable_t __observing_value(char *label, unknown_t value, int size) {
 observable_t __observing(char *label, observables_t observeds,
                          observer_t observer, int size)
 {
-  // step 1: turn the observer into an observable
+  // create an observing observer with the fiven observing handler
   observable_t this = _new(label);
   this->prop        = OBSERVER;
   this->value       = size ? (unknown_t)malloc(size) : NULL;
   this->type_size   = size;
   this->process     = observer;
-  this->observeds   = observeds;    // this is already partial in the graph
-                                    // but cannot be used, no back-links
+
+  // set its observed observables
+  _set_observeds(this, observeds);
+
+  return this;
+}
+
+void _set_observeds(observable_t this, observables_t observeds) {
+  // step 1: set the obseveds
+  this->observeds = observeds;    // this is already partial in the graph
+                                  // but cannot be used, no back-links
 
   // step 2: update the arguments list and our level in the dependency graph
   _update_args(this);
@@ -154,8 +163,6 @@ observable_t __observing(char *label, observables_t observeds,
   foreach(observable_li_t, iter, this->observeds) {
     observables_add(iter->ob->observers, this);
   }
-
-  return this;
 }
 
 // public interface

@@ -58,6 +58,7 @@ typedef void (*observable_handler_t)(observable_t);
 observable_t _new(char*);
 void         _free(observable_t);
 observable_t _update_level(observable_t);
+void         _set_observeds(observable_t, observables_t);
 void         _update_observers_args(observable_t);
 observable_t _update_args(observable_t);
 observable_t _clear_observers(observable_t);
