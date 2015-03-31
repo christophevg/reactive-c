@@ -87,4 +87,7 @@ void stop_observing(void);
 #define __mx(_1, _2, _3, _4,NAME,...) NAME
 #define map(...) __mx(__VA_ARGS__, __m4, __m3)(__VA_ARGS__)
 
+// modification support
+void let(observable_t, observable_t);
+
 #endif

@@ -335,3 +335,16 @@ void __set(observable_t this, void* value, int size) {
   memcpy(this->value, value, size);
   observe_update(this);
 }
+
+// modification support
+
+void let(observable_t target, observable_t source) {
+  // copy observeds
+  if(source->observeds) {
+    _set_observeds(target, observables_dup(source->observeds));
+  }
+  // copy handler
+  if(source->process) {
+    target->process = source->process;
+  }
+}
