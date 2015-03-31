@@ -57,7 +57,7 @@ cmake: ${BUILD_DIR}/Makefile
 ${BUILD_DIR}/Makefile: ${BUILD_DIR}
 	@(${CD} $<; ${CMAKE} -DCMAKE_BUILD_TYPE=${TYPE} ../${SRC_DIR})
 
-images/await.png: ${BUILD_DIR}/examples/await.dot
+images/%.png: ${BUILD_DIR}/examples/%.dot
 	@${MKDIR} images
 	@${DOT} -Tpng -Gsize=5.5,5.5\! -Gdpi=100 -o $@ $<
 
