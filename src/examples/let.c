@@ -16,7 +16,17 @@ int main(void) {
   // but... observable a already exists, so we want to change it.
   // let copies all info from one observable to the other
 
-  let(a, merge(b, c));
+  let(a, disposing(merge(b, c)));
+
+  FILE *fp = fopen("let.dot", "w");
+  to_dot(a, fp);
+  fclose(fp);
+
+  empty_trash();  
+
+  FILE *fp = fopen("disposed-let.dot", "w");
+  to_dot(a, fp);
+  fclose(fp);
 
   set(a, 1);
   

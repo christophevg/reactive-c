@@ -360,7 +360,7 @@ Observables with a grey background are **suspended** or **delayed**. Full arrows
 
 By default the output is sent to **stdout**, but the function also accepts a second argument, a **file pointer**.
 
-### Let's talk bits & bytes (copy.c, let.c)
+### Let's talk bits & bytes (copy.c, set.c)
 
 Observables deal with values in _generic_ way, using the `unknown_t` type, which is basically your catch-all `void*`. But they store some information about the type, more specifically its size. This allows us to implement `observable_value_copy` to copy the value of one observable to another one, without really knowing its exact type.
 
@@ -378,7 +378,7 @@ The underlying principle (aka `memcpy`) also allows for the implementation of a 
 ```c
   int _a = 0;
   observable_t a = observe(_a);
-  let(a, 3);                     // _a == 3 now
+  set(a, 3);                     // _a == 3 now
 ```
 
 ### Filtering (filter.c)
@@ -398,9 +398,9 @@ int main(void) {
 
   observable_t filtered = filter(int, var1, odd);
 
-  let(var1, 1);    // var1 == filtered == 1
-  let(var1, 2);    // var1 == 2 | filtered == 1
-  let(var1, 3);    // var1 == filtered == 3
+  set(var1, 1);    // var1 == filtered == 1
+  set(var1, 2);    // var1 == 2 | filtered == 1
+  set(var1, 3);    // var1 == filtered == 3
 }
 ```
 
@@ -412,5 +412,41 @@ If you ever wonder about higher order observers, consider this: you can make hig
 #define filtered_odd_averaged(type, var) \
         filter(type, average(type, var), odd)
 ```
+
+### Let observables be observables (let.c)
+
+What if we want to alter an existing observer? A more concrete example might be that we want to have a _normal_ value-observable, itself be an observer.
+
+```c
+int main(void) {
+  int _a = 0, _b = 0, _c = 0;
+  
+  observable_t a = observe(_a);
+  observable_t b = observe(_b);
+  observable_t c = observe(_c);
+
+  let(a, merge(b, c));
+  ...
+}
+```
+The `let` function simply copies (overwrites) the `observeds` and the update behaviour. So after this call, the dependency graph looks like this:
+
+<p align="center">
+<img src="images/let.png" height="125">
+</p>
+
+**TIP** - To avoid merge to be still present in the dependency graph, we can use `disposing`, which wraps an observable, returns it and disposes it.
+
+```c
+  ...
+  let(a, disposing(merge(b, c)));
+  empty_trash();
+  ...
+}
+```
+<p align="center">
+<img src="images/disposed-let.png" height="125">
+</p>
+
 
 _To be continued..._
