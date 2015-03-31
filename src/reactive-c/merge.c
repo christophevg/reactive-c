@@ -11,15 +11,23 @@ void _merge_handler(observation_t ob) {
   // make sure we propagate once we're active
   _propagate(ob->self);
 
-  // redirect value to the value of the emitting merged observable
-  ob->self->value = ob->source->value;
+  // if there is no source, ... there is nothing to handle
+  if(ob->source) {
+    if(_is_value(ob->self)) {
+      // we can't redirect the pointer, but can copy the value
+      observable_value_copy(ob->source, ob->self);
+    } else {
+      // redirect value to the value of the emitting merged observable
+      ob->self->value = ob->source->value;
+    } 
+  
+    // cached args are out of date, because we're modifying the pointer itself
+    // force refresh cache on all observers of merged_ob
+    _update_observers_args(ob->self);
 
-  // cached args are out of date, because we're modifying the pointer itself
-  // force refresh cache on all observers of merged_ob
-  _update_observers_args(ob->self);
-
-  // in _observe_update, after the call to this handler, the observers are
-  // triggered, who now will get updated args
+    // in _observe_update, after the call to this handler, the observers are
+    // triggered, who now will get updated args
+  }
 }
 
 // create a single observable observer from a list of observed observables.
