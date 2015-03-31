@@ -17,17 +17,17 @@ int main(void) {
 
   observable_t filtered = filter(int, var1, odd);
 
-  let(var1, 1);
+  set(var1, 1);
 
   assert_equal(*(int*)observable_value(var1),     1, "Expected value = 1\n");
   assert_equal(*(int*)observable_value(filtered), 1, "Expected value = 1\n");
   
-  let(var1, 2);
+  set(var1, 2);
 
   assert_equal(*(int*)observable_value(var1),     2, "Expected value = 2\n");
   assert_equal(*(int*)observable_value(filtered), 1, "Expected value = 1\n");
 
-  let(var1, 3);
+  set(var1, 3);
 
   assert_equal(*(int*)observable_value(var1),     3, "Expected value = 3\n");
   assert_equal(*(int*)observable_value(filtered), 3, "Expected value = 3\n");

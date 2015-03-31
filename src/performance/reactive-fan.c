@@ -29,7 +29,7 @@ int main(void) {
     struct timespec start = now();
   
     for(int i=0; i<UPDATES; i++) {
-      let(source, i);
+      set(source, i);
     }
   
     double d = diff(start, now());

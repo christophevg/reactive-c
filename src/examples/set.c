@@ -15,12 +15,12 @@ int main(void) {
   assert_equal(_a, 0, "a should be 0\n");
   assert_equal(_b, 0, "b should be 0\n");
 
-  let(a, 3);
+  set(a, 3);
 
   assert_equal(_a, 3, "a should be 3\n");
   assert_equal(_b, 0, "b should be 0\n");
 
-  let(b, 3.0);
+  set(b, 3.0);
     
   assert_equal(_a, 3, "a should be 3\n");
   assert_equal(_b, 3, "b should be 3\n");
