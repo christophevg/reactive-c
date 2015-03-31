@@ -47,6 +47,8 @@ observable_t on_activation(observable_t, observable_callback_t);
 // remove an observer from all observeds and releases it entirely
 void dispose(observable_t);
 
+observable_t disposing(observable_t);
+
 // trigger gargage collection
 void empty_trash(void);
 

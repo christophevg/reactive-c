@@ -234,6 +234,11 @@ void dispose(observable_t this) {
   _trash(this);
 }
 
+observable_t disposing(observable_t this) {
+  dispose(this);
+  return this;
+}
+
 // trigger for (external) update of observable
 void _observe_update(observable_t this, observable_t source) {
   // if we're marked for disposal (externally), we don't perform any processing
