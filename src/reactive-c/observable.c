@@ -325,14 +325,8 @@ void observable_value_copy(observable_t src, observable_t trg) {
   memcpy(trg->value, src->value, src->type_size);
 }
 
-void __set_int(observable_t this, int value) {
-  assert(this->type_size == sizeof(int));
-  memcpy(this->value, &value, sizeof(int));
-  observe_update(this);
-}
-
-void __set_double(observable_t this, double value) {
-  assert(this->type_size == sizeof(double));
-  memcpy(this->value, &value, sizeof(double));
+void __let(observable_t this, void* value, int size) {
+  assert(this->type_size == size);
+  memcpy(this->value, value, size);
   observe_update(this);
 }

@@ -56,8 +56,7 @@ void observe_update(observable_t observable);
 // value manipulation support
 void observable_value_copy(observable_t, observable_t);
 
-void __set_int(observable_t, int);
-void __set_double(observable_t, double);
+void __let(observable_t, void*, int);
 
 typedef bool(*validator_t)(unknown_t);
 
@@ -80,7 +79,7 @@ void stop_observing(void);
 #define delayed(x)   delay(x)
 
 // set support
-#define set(t,o,v) __set_##t(o,v)
+#define let(o,v) { __typeof__ (v) _v = (v); __let(o, &_v, sizeof(v)); }
 
 // map support
 #define __m3(o,f,t)   observe(just(o),f,t)

@@ -31,7 +31,7 @@ int main(void) {
   
     // measure time to perform updates
     for(int i=0; i<UPDATES; i++) {
-      set(int, source, i);
+      let(source, i);
     }
   
     double d = diff(start, now());

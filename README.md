@@ -360,7 +360,7 @@ Observables with a grey background are **suspended** or **delayed**. Full arrows
 
 By default the output is sent to **stdout**, but the function also accepts a second argument, a **file pointer**.
 
-### Let's talk bits & bytes (copy.c, set.c)
+### Let's talk bits & bytes (copy.c, let.c)
 
 Observables deal with values in _generic_ way, using the `unknown_t` type, which is basically your catch-all `void*`. But they store some information about the type, more specifically its size. This allows us to implement `observable_value_copy` to copy the value of one observable to another one, without really knowing its exact type.
 
@@ -373,12 +373,12 @@ Observables deal with values in _generic_ way, using the `unknown_t` type, which
   observable_value_copy(a, b);        // _b == 3 too now
 ```
 
-The underlying principle (aka `memcpy`) also allows for the implementation of a `set` function, that updates a variable through an observable, triggering the effects in the dependency graph.
+The underlying principle (aka `memcpy`) also allows for the implementation of a `let` function, that updates a variable through an observable, triggering the effects in the dependency graph.
 
 ```c
   int _a = 0;
   observable_t a = observe(_a);
-  set(int, a, 3);                     // _a == 3 now
+  let(a, 3);                     // _a == 3 now
 ```
 
 ### Filtering (filter.c)
@@ -398,9 +398,9 @@ int main(void) {
 
   observable_t filtered = filter(int, var1, odd);
 
-  set(int, var1, 1);    // var1 == filtered == 1
-  set(int, var1, 2);    // var1 == 2 | filtered == 1
-  set(int, var1, 3);    // var1 == filtered == 3
+  let(var1, 1);    // var1 == filtered == 1
+  let(var1, 2);    // var1 == 2 | filtered == 1
+  let(var1, 3);    // var1 == filtered == 3
 }
 ```
 
