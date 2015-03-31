@@ -256,12 +256,11 @@ void _observe_update(observable_t this, observable_t source) {
 
   // if we have a process execute it (IF WE'RE NOT OUR OWN SOURCE)
   if(this->process && this != source) {
-    // do we pass the value or the object itself?
     struct observation ob = {
-      .self       = this,
-      .source     = source,
-      .observeds  = this->args,
-      ob.observer = this->value
+      .self      = this,
+      .source    = source,
+      .observeds = this->args,
+      .observer  = this->value
     };
     this->process(&ob);
   }
