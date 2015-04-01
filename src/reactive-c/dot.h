@@ -7,11 +7,18 @@
 #include "observable.h"
 
 // dumps the given observable (recursively) in dot format
-void __to_dot(observable_t, FILE*, bool, bool);
+void __to_dot(observable_t, FILE*, int, bool);
 
-#define __d1(x)       __to_dot(x, stdout, false, true)
-#define __d2(x, f)    __to_dot(x, f,      false, true)
-#define __d3(x, f, m) __to_dot(x, f,      m,     true)
+#define DOT_DEFAULT          0
+#define DOT_SHOW_MEMORY      1
+#define DOT_MESSAGE_STYLE    2
+#define DOT_HIDE_LABELS      4
+#define DOT_SMALL_RANK_SEP   8
+#define DOT_SHAPE_IS_CIRCLE 16
+
+#define __d1(x)          __to_dot(x, stdout, DOT_DEFAULT, true)
+#define __d2(x, f)       __to_dot(x, f,      DOT_DEFAULT, true)
+#define __d3(x, f, s)    __to_dot(x, f,      s,           true)
 
 #define __dx(_1, _2, _3, NAME,...) NAME
 

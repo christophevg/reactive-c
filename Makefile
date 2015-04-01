@@ -6,7 +6,7 @@ CD        = cd
 CMAKE		  = cmake
 RM			  = rm -rf
 
-DOT=dot -Nfixedsize=False -Nfontname=Times-Roman -Nshape=rectangle
+DOT=dot -Nfixedsize=False -Nfontname=Times-Roman
 
 TYPE=Release
 
@@ -61,14 +61,8 @@ images/%.png: ${BUILD_DIR}/examples/%.dot
 	@${MKDIR} images
 	@${DOT} -Tpng -Gsize=5.5,5.5\! -Gdpi=100 -o $@ $<
 
-${BUILD_DIR}/examples/await.dot: ${BUILD_DIR}/examples/dot
-	@(cd ${BUILD_DIR}/examples/; ./dot)
-
-${BUILD_DIR}/examples/await: ${BUILD_DIR}/Makefile
-	@(cd ${BUILD_DIR}; make await)
-
-${BUILD_DIR}/examples/dot: ${BUILD_DIR}/Makefile
-	@(cd ${BUILD_DIR}; make dot)
+${BUILD_DIR}/examples/%.dot: run_%
+	@ # <- need a command so that make "thinks" it _can_ rebuild the file
 
 ${BUILD_DIR}:
 	@${MKDIR} $@
@@ -77,3 +71,4 @@ clean:
 	@${RM} ${BUILD_DIR}
 
 .PHONY: all build run clean
+.PRECIOUS: ${BUILD_DIR}/examples/%.dot

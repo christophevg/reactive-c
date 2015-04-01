@@ -353,7 +353,7 @@ At this point, it becomes apparent that as soon as these dependency graphs grow 
 Using `to_dot(observable_t)` function one can generate a dot-language representation of the dependency graph, starting at the provided observable. The function tries to trace every possible other observable that is connected to the initially provided observable. The following example started from `a`:
 
 <p align="center">
-<img src="images/await.png">
+<img src="images/dot.png">
 </p>
 
 Observables with a grey background are **suspended** or **delayed**. Full arrows indicate which observable observes what other observable. Dashed arrows represent the sequential order in which (suspended) observables become active (e.g. in a script). Observed values have a green background.

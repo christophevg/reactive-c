@@ -18,7 +18,7 @@ int main(void) {
     await(        all(a, b, c))
   );
 
-  FILE *fp = fopen("await.dot", "w");
+  FILE *fp = fopen("dot.dot", "w");
   to_dot(a, fp);
   fclose(fp);
 

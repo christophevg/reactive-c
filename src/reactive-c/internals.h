@@ -31,6 +31,8 @@ enum properties {
 #define _is_exported(o)       (o->prop &   EXPORTED)
 #define _is_observed(o)       (o->prop &   OBSERVED)
 #define _is_script(o)         (o->next && o->parent == NULL)
+#define _has_parent(o)        (o->parent != NULL)
+#define _is_script_part(o)    (_is_script(o) || _has_parent(o))
 
 typedef struct observable {
   char           *label;         // textual representation
