@@ -16,6 +16,7 @@ enum properties {
   STOP_PROP   =  32,
   EXPORTED    =  64,
   OBSERVED    = 128,
+  MARKED      = 256,
 };
 
 // macro's to hide underlying bitwise operations (hey, I like "readable code")
@@ -33,6 +34,8 @@ enum properties {
 #define _is_script(o)         (o->next && o->parent == NULL)
 #define _has_parent(o)        (o->parent != NULL)
 #define _is_script_part(o)    (_is_script(o) || _has_parent(o))
+#define _mark(o)              (o->prop |=  MARKED)
+#define _is_marked(o)         (o->prop &   MARKED)
 
 typedef struct observable {
   char           *label;         // textual representation

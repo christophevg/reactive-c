@@ -49,6 +49,12 @@ void __to_dot(observable_t this, FILE *fp, int flags, bool preamble) {
   if(_is_value(this)) {
     fprintf(fp, " color=\"green\", style=\"filled\"");
   }
+
+  // values are green
+  if(_is_marked(this)) {
+    fprintf(fp, " color=\"red\", style=\"filled\"");
+  }
+
   fprintf(fp, "] }\n");
 
   // observeds
