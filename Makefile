@@ -28,11 +28,12 @@ gcc:
 	@read
 	@(CC=${GCC} make TYPE=Debug)
 
-valgrind: ${BUILD_DIR}/examples/await
+valgrind: ${BUILD_DIR}/Makefile
+	@(${CD} ${BUILD_DIR}; make await)
 	@echo "${RED}*** Verifying memory aspects using Valgrind...${NC}"
 	@printf "${GREEN}press any key to continue..${NC}"
 	@read
-	@(${VALGRIND} $<)
+	@(${VALGRIND} ${BUILD_DIR}/examples/await)
 
 scan-build:
 	@echo "${RED}*** Verifying static code using scan-build...${NC}"
@@ -50,7 +51,7 @@ perf: cmake
 	@(${CD} ${BUILD_DIR}; ${MAKE} perf)
 
 run_%: ${BUILD_DIR}/Makefile
-	@(cd ${BUILD_DIR}/; make $@ )
+	@(${CD} ${BUILD_DIR}/; make $@ )
 
 cmake: ${BUILD_DIR}/Makefile
 
