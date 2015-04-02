@@ -24,7 +24,7 @@ int main(void) {
 
   empty_trash();  
 
-  FILE *fp = fopen("disposed-let.dot", "w");
+  fp = fopen("disposed-let.dot", "w");
   to_dot(a, fp);
   fclose(fp);
 
