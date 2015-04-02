@@ -239,8 +239,22 @@ observable_t disposing(observable_t this) {
   return this;
 }
 
+// counter to track the number of messages an update triggers
+int messages = 0;
+
+// a list of observables that can't actually update yet, each iteration over
+// this list incurs a "step"
+observables_t waiting = NULL;
+
 // trigger for (external) update of observable
 void _observe_update(observable_t this, observable_t source) {
+  // every call to the internal observe_update is like a message sent between
+  // distributed nodes (node in the dependency graph)
+  messages++;
+
+  // make sure we're no longer in the waiting list
+  observables_remove(waiting, this);
+
   // if we're marked for disposal (externally), we don't perform any processing
   // one of our observed parents will garbage collect us (sometime)
   // TODO: only true for observables that observe and can be updated
@@ -273,6 +287,9 @@ void _observe_update(observable_t this, observable_t source) {
   // the logic in the process might have marked us for disposal, still we allow
   // the event flow to continue down to our observers one more time.
 
+  // TODO: leveling should be externalized and taken into account for the
+  //       waiting list. now we are susceptible to glithces ;-[
+
   // unless we don't want to propagate an update...
   if(_is_propagating(this)) {
     // notify all our observers to do the same, but only those that are directly
@@ -283,12 +300,15 @@ void _observe_update(observable_t this, observable_t source) {
       if( ! _is_disposed(iter) ) {
         if(iter->ob->level == this->level + 1) {
           _observe_update(iter->ob, this);
+        } else {
+          observables_add(waiting, iter->ob);
         }
       }
     }
   }
 }
 
+// TODO: clean this up, seems a bit hackish
 struct observable_handler_li {
   observable_handler_t         handler;
   struct observable_handler_li *next;
@@ -304,16 +324,49 @@ void _on_update(observable_handler_t handler) {
   update_handlers = item;
 }
 
+// counter for the number of iterations over the (waiting) list of observables
+// that are targetted by an update
+int steps = 0;
+
 // public method can only trigger update, not be a source
 void observe_update(observable_t observable) {
   _debug("UPDATE", observable);
+
+  steps = 1;    // reset and count steps, the top-level update is the first
+  messages = 0; // reset message count
+
+  // reset or create a waiting list
+  // observables that can't be updated - due to other observeds that still need
+  // to propagate - are put in a waiting/todo list
+  if(waiting != NULL) {
+    observables_clear(waiting);   // reset
+  } else {
+    waiting = observables_new();  // lazy init
+  }
+
+  // dispatch to internal update handler
   _observe_update(observable, NULL);
+
   // call all registered handlers
   for(struct observable_handler_li *item = update_handlers; item; item = item->next) {
     item->handler(observable);
   }
+
+  // as long as there are observables waiting/delaying their update
+  // restart the process for each of these
+  while(!observables_is_empty(waiting)) {
+    steps++;    // count additional steps to _observe_update
+    // the first in the list is always the next one to try, it will remove
+    // itself from the list if done
+    _observe_update(observables_first(waiting), NULL);
+  }
+
   // empty the trash
   empty_trash();
+
+  // report on steps/messages
+  _debug_printf("observe_update done in %d steps and %d messages.\n",
+                steps, messages);
 }
 
 void stop_observing(void) {
