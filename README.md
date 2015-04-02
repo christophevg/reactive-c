@@ -6,7 +6,7 @@ Christophe VG (<contact@christophe.vg>)
 
 ## Introduction
 
-The origin of this experiment is the paper titled "[Deprecating the Observer Pattern with Scale.React](http://infoscience.epfl.ch/record/176887/files/DeprecatingObservers2012.pdf)". The goal of this experiment is to implement a RP API in C, thus making it available to e.g. embedded development in C.
+The origin of this experiment is the paper titled "[Deprecating the Observer Pattern with Scala.React](http://infoscience.epfl.ch/record/176887/files/DeprecatingObservers2012.pdf)". The goal of this experiment is to implement a RP API in C, thus making it available to e.g. embedded development in C.
 
 ### What do I consider RP?
 
@@ -517,5 +517,11 @@ _**But**, in the end the values are okay, so what's the big deal?_ True, the val
 So without further ado...
 
 ### Not-So Intermezzo: fixing propagation (part 2)
+
+The (current) design of reactive-c gives observers a reference to the values of its observed observables. Propagation of changes through the dependency graph are calls to `_observe_update` with an observer as an argument. It actually triggers re-computation of its own value, given the references to its observed values. So fixing the (current) glitch-causing behaviour consists in delaying the updates until all observed observables have been updated.
+
+This can be achieved by not actually having observed observables calling `_observe_update` on all of their observers, but putting them in a list of observers that require an update. Updates then are only requested when no other observers, with a level lower than the ones that still need to be updated, are awaiting an update. This by itself can be implemented as a list of observables, ordered by their level and continously sending update requests to the first observable in the list, until the list (aka update queue is empty). This also appears to be the algorithm used by Scala.React. According to the REScala paper, this is far from optimal, but it will do for now ;-)
+
+
 
 _To be continued..._
