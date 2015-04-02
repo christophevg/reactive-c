@@ -16,6 +16,7 @@ void __to_dot(observable_t, FILE*, int, bool);
 #define DOT_SMALL_RANK_SEP   8
 #define DOT_SHAPE_IS_CIRCLE 16
 #define DOT_SHOW_MARKED     32
+#define DOT_SHOW_LEVEL      64
 
 #define __d1(x)          __to_dot(x, stdout, DOT_DEFAULT, true)
 #define __d2(x, f)       __to_dot(x, f,      DOT_DEFAULT, true)

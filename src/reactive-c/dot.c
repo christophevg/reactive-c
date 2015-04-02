@@ -18,6 +18,7 @@ void __to_dot(observable_t this, FILE *fp, int flags, bool preamble) {
   bool show_label      = !(flags & DOT_HIDE_LABELS);
   bool small_rank_sep  = flags & DOT_SMALL_RANK_SEP;
   bool shape_is_circle = flags & DOT_SHAPE_IS_CIRCLE;
+  bool show_level      = flags & DOT_SHOW_LEVEL;
 
   if(preamble) {
     fprintf(fp,
@@ -38,7 +39,8 @@ void __to_dot(observable_t this, FILE *fp, int flags, bool preamble) {
   fprintf(fp, "subgraph level%d { rank=same; \"%p\" [label=\"%s",
           _is_script_part(this) ? 666 : this->level, (void*)this,
           show_label ? this->label : "");
-  if(show_memory) { fprintf(fp, "\n%p",(void*)this);     }
+  if(show_level)  { fprintf(fp, " @ %d", this->level); }
+  if(show_memory) { fprintf(fp, "\n%p",(void*)this);   }
   fprintf(fp, "\"");
 
   // delayed/suspended observables are grey
