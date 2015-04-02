@@ -28,4 +28,6 @@ bool observables_is_empty(observables_t list);
 
 int observables_count(observables_t);
 
+observable_t observables_first(observables_t);
+
 #endif

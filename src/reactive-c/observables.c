@@ -108,3 +108,7 @@ observable_t _combine(char *label, observables_t observeds, observer_t handler) 
   observable_t combination = start(__observing(label, observeds, handler, 0));
   return combination;
 }
+
+observable_t observables_first(observables_t list) {
+  return list->first ? list->first->ob : NULL;
+}
