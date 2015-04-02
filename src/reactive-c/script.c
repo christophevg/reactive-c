@@ -23,7 +23,7 @@ observable_t _step(observable_t script) {
 
   // start
   start(step);
-  // is the parent/script has an on_activation handler, execute it on the step
+  // if the parent/script has an on_activation handler, execute it on the step
   if(step->parent && step->parent->on_activation) {
     step->parent->on_activation(step);
   }
@@ -121,4 +121,3 @@ observable_t await(observable_t observable) {
   _debug("AWAIT", this);
   return suspended(this);
 }
-
