@@ -42,11 +42,11 @@ void __to_dot(observable_t this, FILE *fp, int flags, bool preamble) {
   fprintf(fp, "\"");
 
   // delayed/suspended observables are grey
-  if(this->prop & DELAYED || this->prop & SUSPENDED) {
+  if(_is_delayed(this) || _is_suspended(this)) {
     fprintf(fp, " color=\"grey\", style=\"filled\"");
   }
   // values are green
-  if(this->prop & VALUE) {
+  if(_is_value(this)) {
     fprintf(fp, " color=\"green\", style=\"filled\"");
   }
   fprintf(fp, "] }\n");
