@@ -36,6 +36,9 @@ enum properties {
 #define _is_script_part(o)    (_is_script(o) || _has_parent(o))
 #define _mark(o)              (o->prop |=  MARKED)
 #define _is_marked(o)         (o->prop &   MARKED)
+#define _is_active(o)         ! _is_disposed(target) && \
+                              ! _is_delayed(target) && \
+                              ! _is_suspended(target)
 
 typedef struct observable {
   char           *label;         // textual representation

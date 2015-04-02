@@ -520,8 +520,17 @@ So without further ado...
 
 The (current) design of reactive-c gives observers a reference to the values of its observed observables. Propagation of changes through the dependency graph are calls to `_observe_update` with an observer as an argument. It actually triggers re-computation of its own value, given the references to its observed values. So fixing the (current) glitch-causing behaviour consists in delaying the updates until all observed observables have been updated.
 
-This can be achieved by not actually having observed observables calling `_observe_update` on all of their observers, but putting them in a list of observers that require an update. Updates then are only requested when no other observers, with a level lower than the ones that still need to be updated, are awaiting an update. This by itself can be implemented as a list of observables, ordered by their level and continously sending update requests to the first observable in the list, until the list (aka update queue is empty). This also appears to be the algorithm used by Scala.React. According to the REScala paper, this is far from optimal, but it will do for now ;-)
+This can be achieved by not actually having observed observables calling `_observe_update` on all of their observers, but putting them in a list of observers that require an update. Updates then are only requested when no other observers, with a level lower than the ones that still need to be updated, are awaiting an update. This by itself can be implemented as a list of observables, ordered by their level and continuously sending update requests to the first observable in the list, until the list (aka update queue is empty). This also appears to be the algorithm used by Scala.React. According to the REScala paper, this is far from optimal, but it will do for now ;-)
 
+So with this redesigned level-based priority-queue in place, the debug output of the glitch example shows that d is no longer update until both b and c are:
 
+```
+updating _a @ level 0
+updating __each(1, a) @ level 1
+updating __each(1, a) @ level 1
+updating __each(2, b, c) @ level 2
+observe_update done using 4 messages.
+a=5, b=6, c=15, d=21
+```
 
 _To be continued..._
