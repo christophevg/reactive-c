@@ -92,4 +92,7 @@ void stop_observing(void);
 // modification support
 void let(observable_t, observable_t);
 
+// forces a level to a given value -> OVERWRITTEN BY FRAMEWORK WHEN NEEDED
+observable_t force_level(observable_t, int);
+
 #endif

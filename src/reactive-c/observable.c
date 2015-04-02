@@ -406,3 +406,8 @@ void let(observable_t target, observable_t source) {
     target->process = source->process;
   }
 }
+
+observable_t force_level(observable_t observable, int level) {
+  observable->level = level;
+  return observable;
+}
