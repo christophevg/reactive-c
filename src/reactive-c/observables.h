@@ -19,12 +19,15 @@ observables_t __each(int,...);
 
 observables_t observables_new(void);
 void observables_add(observables_t, observable_t);
+void observables_insert_by_level(observables_t, observable_t);
 observables_t observables_dup(observables_t);
+
 void observables_remove(observables_t, observable_t);
+
 void observables_clear(observables_t);
-  
-bool observables_contains(observables_t, observable_t);
+
 bool observables_is_empty(observables_t list);
+bool observables_contains(observables_t, observable_t);
 
 int observables_count(observables_t);
 

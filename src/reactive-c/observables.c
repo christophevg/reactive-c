@@ -36,14 +36,37 @@ observables_t observables_new() {
   return list;
 }
 
-void observables_add(observables_t list, observable_t observable) {
+observable_li_t _new_observable_li(observable_t observable) {
   observable_li_t item = malloc(sizeof(struct observable_li));
   item->ob             = observable;
   item->next           = NULL;
   item->prop           = 0;
+  return item;
+}
+
+void observables_add(observables_t list, observable_t observable) {
+  observable_li_t item = _new_observable_li(observable);
   if(list->last != NULL) { list->last->next = item; }
-  list->last           = item;
+  list->last = item;
   if(list->first == NULL) { list->first = item; }
+}
+
+#include <stdio.h>
+
+// inserts an observable in the list, keeping the observables ordered based on
+// their level.
+void observables_insert_by_level(observables_t list, observable_t observable) {
+  // find the insertion point, which is the address of the insertion point
+  observable_li_t* point = &list->first;
+  while(*point && (*point)->ob->level < observable->level) {
+    point = & (*point)->next;
+  }
+
+  // insert new item
+  observable_li_t item = _new_observable_li(observable);
+  item->next = *point;
+  if(*point == NULL) { list->last = item; } // keep tracking last item in list
+  *point = item;
 }
 
 observables_t observables_dup(observables_t originals) {
