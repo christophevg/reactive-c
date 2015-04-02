@@ -89,9 +89,9 @@ void test_insert_by_level(observables_f *ob, gconstpointer _) {
   observable_t o1 = force_level(observe(value), 1);
   observable_t o2 = force_level(observe(value), 2);
   observable_t o3 = force_level(observe(value), 3);
-  observables_insert_by_level(ob->list, o2);
-  observables_insert_by_level(ob->list, o3);
-  observables_insert_by_level(ob->list, o1);
+  observables_insert_unique_by_level(ob->list, o2);
+  observables_insert_unique_by_level(ob->list, o3);
+  observables_insert_unique_by_level(ob->list, o1);
 
   g_assert(observables_count(ob->list) == 3);
 
@@ -110,6 +110,34 @@ void test_insert_by_level(observables_f *ob, gconstpointer _) {
   observables_remove(ob->list, o);
 }
 
+void test_insert_unique(observables_f *ob, gconstpointer _) {
+  g_assert(observables_is_empty(ob->list));
+  int value = 0;
+  observable_t o1 = force_level(observe(value), 1);
+  observable_t o2 = force_level(observe(value), 2);
+  observable_t o3 = force_level(observe(value), 3);
+
+  // this simulates the glitch scenario
+  // 0 adds 1 and 2
+  observables_insert_unique_by_level(ob->list, o1);
+  observables_insert_unique_by_level(ob->list, o2);
+
+  g_assert(observables_count(ob->list) == 2);
+
+  // 1 gets updated
+  observables_remove(ob->list, o1);
+  observables_insert_unique_by_level(ob->list, o3);
+
+  g_assert(observables_count(ob->list) == 2);
+
+  // 2 gets updated  
+  observables_remove(ob->list, o2);
+  observables_insert_unique_by_level(ob->list, o3);
+
+  // only 3 should still be in the list
+  g_assert(observables_count(ob->list) == 1);
+}
+
 int main(int argc, char **argv) {
   g_test_init(&argc, &argv, NULL);
   
@@ -125,5 +153,7 @@ int main(int argc, char **argv) {
              setup_list_with_three_observable, test_dup, teardown );
   g_test_add("/observables/insert_by_level", observables_f, NULL,
              setup_empty_list, test_insert_by_level, teardown );
+  g_test_add("/observables/insert_unique", observables_f, NULL,
+             setup_empty_list, test_insert_unique, teardown );
   return g_test_run();
 }

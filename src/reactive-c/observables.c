@@ -51,14 +51,18 @@ void observables_add(observables_t list, observable_t observable) {
   if(list->first == NULL) { list->first = item; }
 }
 
-#include <stdio.h>
-
 // inserts an observable in the list, keeping the observables ordered based on
 // their level.
-void observables_insert_by_level(observables_t list, observable_t observable) {
+void observables_insert_unique_by_level(observables_t list,
+                                        observable_t observable)
+{
   // find the insertion point, which is the address of the insertion point
   observable_li_t* point = &list->first;
-  while(*point && (*point)->ob->level < observable->level) {
+  // we insert at the end of observables of the same level, to eliminate dups
+  // and keep logical processing order
+  while(*point && (*point)->ob->level <= observable->level) {
+    // if we encounter the observable => abort
+    if((*point)->ob == observable) { return; } // it's already in there
     point = & (*point)->next;
   }
 

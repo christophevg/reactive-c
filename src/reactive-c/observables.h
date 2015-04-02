@@ -19,7 +19,7 @@ observables_t __each(int,...);
 
 observables_t observables_new(void);
 void observables_add(observables_t, observable_t);
-void observables_insert_by_level(observables_t, observable_t);
+void observables_insert_unique_by_level(observables_t, observable_t);
 observables_t observables_dup(observables_t);
 
 void observables_remove(observables_t, observable_t);
