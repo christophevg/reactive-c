@@ -448,5 +448,74 @@ The `let` function simply copies (overwrites) the `observeds` and the update beh
 <img src="images/disposed-let.png" height="125">
 </p>
 
+### Intermezzo: fixing the propagation (part 1)
+
+While going through the paper about [Distributed REScala](http://www.guidosalvaneschi.com/attachments/papers/2014_Distributed_REScala_An_Update_Algorithm_for_Distributed_Reactive_Programming_pdf.pdf), I was caught by a comparison of different algorithms to propagate updates through the dependency graph. I was wondering hoe reactive-c would perform, so I made some modifications and added some features to the `dot` output facilities. Et voila...
+
+<p align="center">
+<img src="images/complex.png" width="400">
+</p>
+
+```
+observe_update done in 6 steps and 18 messages.
+```
+
+If you take a look at the paper, you might notice that their dependency graphs aren't correctly "levelled". 
+
+**Confession 1**: The result as shown above wasn't the first result. I actually had to fix the code to include observers that weren't just one level above the observable that was being updated. 
+
+**Confession 2**: In its current state, reactive-c still isn't glitch-free. The following example shows this:
+
+```c
+int main(void) {
+  int _a = 0;
+  
+  observable_t a = observe(_a);
+
+  observable_t b = observe(just(a),    add_one,     int);
+  observable_t c = observe(just(a),    times_three, int);
+  observable_t d = observe(each(b, c), sum,         int);
+  
+  // propagate one change through the graph
+  set(a, 5);
+  
+  printf("a=%d, b=%d, c=%d, d=%d\n",
+         *(int*)observable_value(a),
+         *(int*)observable_value(b),
+         *(int*)observable_value(c),
+         *(int*)observable_value(d));
+  ...
+```
+
+This creates a dependency graph that looks like this:
+
+<p align="center">
+<img src="images/glitch.png" width="240">
+</p>
+
+And the output looks like...
+
+```
+a=5, b=6, c=15, d=21
+```
+
+_**But** that's correct, so what's the problem?._ Indeed, **but** there still is a glitch. When adding some debugging output to show the underlying propagation decisions...
+
+```
+a=5 is propagating change to b=0 => b=6
+b=6 is propagating change to d=0 => d=6
+a=5 is propagating change to c=0 => c=15
+c=15 is propagating change to d=6 => d=21
+a=5, b=6, c=15, d=21
+```
+... we learn that when a is updated, it first propagates its change to b, which is updated from 0 to 6 (=a+1). In its turn, b propagates its change to d, which is updated from 0 to 6 (=b+c). At this point, there is a glitch, because d now holds a value that is considered wrong. While the change is propagated/pushed through the network, all values _should_ be stable at any point. Given this network, d should never hold the value 6.
+
+So what should have happened? Although that one of its observed values has changed, d should wait to update its own value, until all of its observed values have been updated, or at least are in sync up to their level.
+
+_**But**, in the end the values are okay, so what's the big deal?_ True, the values are okay in the end. But now imagine that d is a variable that is directly linked to the physical output of your program and it controls the button that sets of the launch of a nuclear missile?! Do you still think its a good idea that d holds an incorrect value for even a fraction of time?
+
+So without further ado...
+
+### Not-So Intermezzo: fixing propagation (part 2)
 
 _To be continued..._
