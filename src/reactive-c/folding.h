@@ -10,6 +10,12 @@ observable_t __fold_double(observable_t, observer_t, double);
 #define __fx(_1,_2,_3,_4,NAME,...) NAME
 
 // actual public API
-#define fold(...) __fx(__VA_ARGS__, __f4, __f3)(__VA_ARGS__)
+#define fold(...) __fx(__VA_ARGS__, __f4, __f3, __f2, __f1, 0)(__VA_ARGS__)
+
+// reduce is actually a fold, which takes the first value as its initialization
+// in case that is behaves the same as starting with 0, we can reuse the default
+// fold implementation
+
+#define reduce(o,f,t) auto_dispose(fold(o,f,t))
 
 #endif
