@@ -533,4 +533,71 @@ observe_update done using 4 messages.
 a=5, b=6, c=15, d=21
 ```
 
+### The Future(s) of Observables
+
+While reading material related to all of this, I of course came across `futures`, `promises`,... For example at [https://github.com/cujojs/when](https://github.com/cujojs/when):
+
+```js
+var when = require('when');
+var rest = require('rest');
+
+when.reduce(when.map(getRemoteNumberList(), times10), sum)
+    .done(function(result) {
+        console.log(result);
+    });
+
+function getRemoteNumberList() {
+    // Get a remote array [1, 2, 3, 4, 5]
+    return rest('http://example.com/numbers').then(JSON.parse);
+}
+
+function sum(x, y) { return x + y; }
+function times10(x) {return x * 10; }
+```
+
+At first, I thought this could easily be implemented using Reactive C. And I was right :-)
+
+```c
+#include <stdlib.h>
+#include "unit/test.h"
+#include "reactive-c/api.h"
+
+int sum(int a, int b) { return a + b;  }      lift_fold1(int, sum)
+int times10(int a)    { return a * 10; }      lift1(int, times10)
+
+void console_log(observable_t ob) {
+  capture_printf("%d", *(int*)observable_value(ob));
+}
+
+int main(void) {
+  observable_t remote_number_list = observed(int);
+
+  on_dispose(
+    reduce(map(remote_number_list, lifted(times10), int), lifted(sum), int),
+    console_log
+  );
+
+  // simulate 5 integers arriving
+  set(remote_number_list, 1);
+  set(remote_number_list, 2);
+  set(remote_number_list, 3);
+  set(remote_number_list, 4);
+  set(remote_number_list, 5);
+  dispose(remote_number_list);
+
+  assert_output_was("150");
+
+  exit(EXIT_SUCCESS);
+}
+```
+
+Notable small changes include:
+
+* introduction of `lift_fold1` and `lift1` to explicitly lift functions
+* introduction of `observed` constructor that creates an observable value without pre-existing storage, implemented as a macro.
+* `reduce` is just another name for `fold` without a predefined initial value
+* not visible, but an interesting underlying addition is the concept of `AUTO DISPOSING`, which is now applied to `map` and `reduce`. When these observables are informed of the disposal of their last observed observable, they will automatically dispose themselves. This allows for tracking the disposal of the `reduce` observable and respond to it being "done".
+
+The implementation deals with the the `remote_number_list` in a bit different way than the original example. In stead of receiving a list as a whole, it deals with each element in turn and notifies the end of this list using the `dispose`.  In a way, this felt more natural and correct with Reactive C. Time will tell if this is a correct interpretation. Right now, it allowed for a complete, working and very small implementation, that adhered to the original example as much as possible.
+
 _To be continued..._
