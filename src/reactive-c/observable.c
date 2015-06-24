@@ -197,6 +197,12 @@ observable_t undelay(observable_t this) {
   return this;
 }
 
+observable_t auto_dispose(observable_t this) {
+  this->prop |= AUTO_DISPOSE;
+  _debug("AUTO DISPOSE", this);
+  return this;
+}
+
 // actually activate the observable in the dependecy graph
 observable_t start(observable_t this) {
   _debug("STARTING", this);
@@ -222,6 +228,16 @@ observable_t on_activation(observable_t this, observable_callback_t callback) {
   return this;
 }
 
+void _handle_disposal(observable_t this, observable_t observed) {
+  // AUTO_DISPOSE implementation
+  // if the only observed observable is disposed, dispose ourself
+  if(_auto_dispose(this)) {
+    if(this->observeds->first->ob == this->observeds->last->ob) {
+      dispose(this);
+    }
+  }
+}
+
 // marks an observable for disposing, which is honored when an update-push is
 // executed on it.
 void dispose(observable_t this) {
@@ -230,6 +246,10 @@ void dispose(observable_t this) {
   _debug("DISPOSE", this);
   if(this->on_dispose) {
     this->on_dispose(this);
+  }
+  // notify observers of disposal of observed
+  foreach(observable_li_t, iter, this->observers) {
+    _handle_disposal(iter->ob, this);
   }
   _trash(this);
 }

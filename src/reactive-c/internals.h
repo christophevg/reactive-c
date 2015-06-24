@@ -7,16 +7,17 @@
 // observables can have several properties, which influences the internal
 // workings.
 enum properties {
-  UNKNOWN     =   0,
-  VALUE       =   1,
-  OBSERVER    =   2,
-  DISPOSED    =   4, // used to mark an observable as ready to be removed
-  SUSPENDED   =   8,
-  DELAYED     =  16,
-  STOP_PROP   =  32,
-  EXPORTED    =  64,
-  OBSERVED    = 128,
-  MARKED      = 256,
+  UNKNOWN      =   0,
+  VALUE        =   1,
+  OBSERVER     =   2,
+  DISPOSED     =   4, // used to mark an observable as ready to be removed
+  SUSPENDED    =   8,
+  DELAYED      =  16,
+  STOP_PROP    =  32,
+  EXPORTED     =  64,
+  OBSERVED     = 128,
+  MARKED       = 256,
+  AUTO_DISPOSE = 512,
 };
 
 // macro's to hide underlying bitwise operations (hey, I like "readable code")
@@ -39,6 +40,7 @@ enum properties {
 #define _is_active(o)         ! _is_disposed(target) && \
                               ! _is_delayed(target) && \
                               ! _is_suspended(target)
+#define _auto_dispose(o)      (o->prop & AUTO_DISPOSE)
 
 typedef struct observable {
   char           *label;         // textual representation

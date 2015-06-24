@@ -39,6 +39,8 @@ observable_t suspend(observable_t);
 // delay an observable until its scripting parent is activated
 observable_t delay(observable_t);
 
+observable_t auto_dispose(observable_t);
+
 // add a callback to the observable, triggered when it is disposed
 typedef void (*observable_callback_t)(observable_t);
 observable_t on_dispose(observable_t, observable_callback_t);
@@ -87,7 +89,7 @@ void stop_observing(void);
 #define __m3(o,f,t)   observe(just(o),f,t)
 #define __m4(o,f,t,s) observe(just(o),f,t,s)
 #define __mx(_1, _2, _3, _4,NAME,...) NAME
-#define map(...) __mx(__VA_ARGS__, __m4, __m3)(__VA_ARGS__)
+#define map(...) auto_dispose(__mx(__VA_ARGS__, __m4, __m3, __m2, __m1)(__VA_ARGS__))
 
 // modification support
 void let(observable_t, observable_t);
