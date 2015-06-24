@@ -30,6 +30,8 @@ observable_t __observing(char*, observables_t, observer_t, int);
 // construct an observable from a (pointer to a) value
 observable_t __observing_value(char*, unknown_t, int);
 
+#define observed(t) __observing(#t, NULL, NULL, sizeof(t))
+
 // actually starts an observable
 observable_t start(observable_t);
 
