@@ -17,9 +17,10 @@ void console_log(observable_t ob) {
 int main(void) {
   observable_t remote_number_list = observed(int);
 
-  on_dispose(
+  when(
     reduce(map(remote_number_list, lifted(times10), int), lifted(sum), int),
-    console_log
+    is(done),
+    then(console_log)
   );
 
   // simulate 5 integers arriving

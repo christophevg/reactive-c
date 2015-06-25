@@ -12,5 +12,6 @@
 #include "filter.h"
 #include "script.h"
 #include "dot.h"
+#include "when.h"
 
 #endif

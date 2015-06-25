@@ -600,4 +600,16 @@ Notable small changes include:
 
 The implementation deals with the the `remote_number_list` in a bit different way than the original example. In stead of receiving a list as a whole, it deals with each element in turn and notifies the end of this list using the `dispose`.  In a way, this felt more natural and correct with Reactive C. Time will tell if this is a correct interpretation. Right now, it allowed for a complete, working and very small implementation, that adhered to the original example as much as possible.
 
+### But...
+
+... with a little support from two functions and some macro's we can even improve on this and actually introduce `when` and remove the up-front call back registration for the disposal handler...
+
+```c
+  when(
+    reduce(map(remote_number_list, lifted(times10), int), lifted(sum), int),
+    is(done),
+    then(console_log)
+  );
+```
+
 _To be continued..._
