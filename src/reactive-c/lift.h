@@ -21,4 +21,6 @@
 
 #define lifted(x) __lifted_##x
 
+#define be(f, t, ...) observe(each(__VA_ARGS__), lifted(f), t)
+
 #endif
